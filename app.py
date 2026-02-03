@@ -12,6 +12,16 @@ uploaded_file = st.file_uploader(
     type=["csv", "xlsx"]
 )
 
+@st.cache_data
+def load_sales_budget():
+    FILE_PATH = r"G:\SAP-BI-Data\CI Analytics\Dashboard Projects\GEN2Modelling\SalesBudget.xlsx"
+    SHEET_NAME = "CY26"
+
+    df = pd.read_excel(FILE_PATH, sheet_name=SHEET_NAME)
+    df.columns = df.columns.str.strip()
+    return df
+
+
 if uploaded_file:
     if uploaded_file.name.endswith(".csv"):
         df = pd.read_csv(uploaded_file)
@@ -75,11 +85,11 @@ if uploaded_file:
         step=1.0
     ) / 100
 
-    opportunity_cost = st.sidebar.number_input(
-        "Opportunity cost (Margins ex farming) – FNQ ($)",
-        value=10.0,
-        step=1.0
-    )
+    # opportunity_cost = st.sidebar.number_input(
+    #     "Opportunity cost (Margins ex farming) – FNQ ($)",
+    #     value=10.0,
+    #     step=1.0
+    # )
 
     margin_reduction_factor = st.sidebar.number_input(
         "Margin reduction factor %",
@@ -163,6 +173,76 @@ if uploaded_file:
         (filtered_by_time["Plant"].isin(selected_plants)) &
         (filtered_by_time["Variety"].isin(selected_varieties))
     ].copy()
+
+        # =========================
+    # 💰 LOAD SALES BUDGET (BX RETURN)
+    # =========================
+    
+    budget_raw = load_sales_budget()
+    
+    # Ensure week is clean integer
+    budget_raw["Week"] = (
+        budget_raw["Week"]
+        .astype(str)
+        .str.strip()
+        .astype(int)
+    )
+    
+    # Pick only BX Budget Return (Kg) columns
+    bx_kg_cols = [
+        c for c in budget_raw.columns
+        if "BX Budget Return (Kg)" in c
+    ]
+    
+    # Convert wide → long
+    budget_long = budget_raw.melt(
+        id_vars=["Week"],
+        value_vars=bx_kg_cols,
+        var_name="Source",
+        value_name="Opportunity Cost ($/kg)"
+    )
+    
+    # Add Fiscal mapping
+    budget_long["Fiscal Year"] = "FY26"
+    budget_long["Fiscal Week No"] = budget_long["Week"]
+    
+    # Aggregate safely (multiple farms → average)
+    budget_lookup = (
+        budget_long
+        .dropna(subset=["Opportunity Cost ($/kg)"])
+        .groupby(["Fiscal Year", "Fiscal Week No"], as_index=False)
+        .agg({"Opportunity Cost ($/kg)": "mean"})
+    )
+
+        # Ensure Fiscal Week is numeric on harvest side
+    filtered_df["Fiscal Week No"] = (
+        filtered_df["Fiscal Week No"]
+        .astype(str)
+        .str.strip()
+        .astype(int)
+    )
+    
+    # Merge budget → harvest
+    filtered_df = filtered_df.merge(
+        budget_lookup,
+        on=["Fiscal Year", "Fiscal Week No"],
+        how="left"
+    )
+
+    st.subheader("🔍 Opportunity Cost Validation (BX Budget Return Kg)")
+
+    st.dataframe(
+        filtered_df[
+            ["Fiscal Year", "Fiscal Week No", "Opportunity Cost ($/kg)"]
+        ]
+        .drop_duplicates()
+        .sort_values(["Fiscal Year", "Fiscal Week No"]),
+        use_container_width=True
+    )
+    missing = filtered_df["Opportunity Cost ($/kg)"].isna().sum()
+    if missing > 0:
+        st.warning(f"⚠️ {missing} rows missing BX Budget Return mapping")
+
 
 
 

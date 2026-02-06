@@ -8,24 +8,14 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* Hide Streamlit branding & UI */
-    #MainMenu {display: none;}
-    footer {display: none;}
-    header {display: none;}
-
-    /* Hide bottom-right floating elements */
-    div[data-testid="stToolbar"] {display: none;}
-    div[data-testid="stDecoration"] {display: none;}
-    div[data-testid="stStatusWidget"] {display: none;}
-    div[data-testid="stAppViewContainer"] > div:last-child {display: none;}
-
-    /* Hide Streamlit profile/share button */
-    button[title="View app menu"] {display: none;}
-    button[title="View options"] {display: none;}
+        footer {visibility: hidden;}
+        header {visibility: hidden;}
+        #MainMenu {visibility: hidden;}
     </style>
     """,
     unsafe_allow_html=True
 )
+
 
 
 # ============================================================

@@ -4,6 +4,18 @@ import pandas as pd
 st.set_page_config(
     layout="wide"
 )
+
+st.markdown(
+    """
+    <style>
+        footer {visibility: hidden;}
+        header {visibility: hidden;}
+        #MainMenu {visibility: hidden;}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # ============================================================
 # PAGE CONFIG
 # ============================================================

@@ -13,13 +13,8 @@ tab_results, tab_dictionary = st.tabs(
 
 with tab_results:
     
-    st.title("🌱 Harvest Data Explorer")
+    st.title("🌱 GEN2 IRR Modelling")
     # ============================================================
-    # FILE UPLOAD
-    uploaded_file = st.file_uploader(
-        "Upload your Harvest dataset (CSV or Excel) — optional",
-        type=["csv", "xlsx"]
-    )
     # ============================================================
     # ============================================================
     # LOAD SALES BUDGET (NUMERIC FISCAL YEAR)
@@ -69,287 +64,270 @@ with tab_results:
         ].dropna()
     
     
-    budget_lookup = load_sales_budget()
-    
+    budget_lookup = load_sales_budget()        
+    df = pd.read_excel("data/Actuals.xlsx")
+    df.columns = df.columns.str.strip()
+    # Required columns
+    required_columns = [
+        "Costa Fiscal Year",
+        "Pick Date",
+        "Fiscal Week No",
+        "Plant",
+        "Product Variety",
+        "Yield Kg",
+        "Variety Area (ha)",
+        "Cost Per Kg - Total Harvest Cost"
+    ]
+
+    missing = [c for c in required_columns if c not in df.columns]
+    if missing:
+        st.error(f"Missing columns: {missing}")
+        st.stop()
+
+    # Ensure correct types
+    df["Fiscal Year"] = (
+        df["Costa Fiscal Year"]
+        .astype(str)
+        .str.extract(r"(\d{4})", expand=False)
+        .astype(int)
+    )
+
+    df["Fiscal Week No"] = df["Fiscal Week No"].astype(int)
+    df["Pick Date"] = pd.to_datetime(df["Pick Date"])
+
     # ============================================================
-    # PROCESS HARVEST DATA
+    # SIDEBAR INPUTS
     # ============================================================
-    if uploaded_file:
-    
-        # Load harvest file
-        df = (
-            pd.read_csv(uploaded_file)
-            if uploaded_file.name.endswith(".csv")
-            else pd.read_excel(uploaded_file)
-        )
-    
-        df.columns = df.columns.str.strip()
-        st.success("Harvest file uploaded successfully!")
-    else:
-        
-        df = pd.read_excel("data/Actuals.xlsx")
-        df.columns = df.columns.str.strip()
-        # Required columns
-        required_columns = [
-            "Costa Fiscal Year",
-            "Pick Date",
-            "Fiscal Week No",
-            "Plant",
-            "Product Variety",
-            "Yield Kg",
-            "Variety Area (ha)",
-            "Cost Per Kg - Total Harvest Cost"
-        ]
-    
-        missing = [c for c in required_columns if c not in df.columns]
-        if missing:
-            st.error(f"Missing columns: {missing}")
-            st.stop()
-    
-        # Ensure correct types
-        df["Fiscal Year"] = (
-            df["Costa Fiscal Year"]
-            .astype(str)
-            .str.extract(r"(\d{4})", expand=False)
-            .astype(int)
-        )
-    
-        df["Fiscal Week No"] = df["Fiscal Week No"].astype(int)
-        df["Pick Date"] = pd.to_datetime(df["Pick Date"])
-    
-        # ============================================================
-        # SIDEBAR INPUTS
-        # ============================================================
-        st.sidebar.header("🔧 Harvest Inputs")
-    
-        harvest_speed = st.sidebar.number_input(
-            "Harvest speed (Ha / Hour)",
-            value=0.10,
-            step=0.01
-        )
-    
-        num_machines = st.sidebar.number_input(
-            "Number of Machines",
-            value=10,
-            step=1
-        )
-    
-        session_length = st.sidebar.number_input(
-            "Session Length (Hours)",
-            value=8.0,
-            step=0.5
-        )
-    
-        lost_damaged_pct = st.sidebar.number_input(
-            "Lost / Damaged %",
-            value=15.0,
-            step=1.0
-        ) / 100
-    
-        # margin_reduction_factor = st.sidebar.number_input(
-        #     "Margin Reduction %",
-        #     value=100.0,
-        #     step=5.0
-        # ) / 100
-    
-        machine_to_staff = st.sidebar.number_input(
-            "Machine to Staff Ratio",
-            value=5.0,
-            step=1.0
-        )
-    
-        staff_wages = st.sidebar.number_input(
-            "Staff Wages ($/hr)",
-            value=32.0,
-            step=1.0
-        )
-    
-        max_available_hours = num_machines * session_length
-    
-            # ============================================================
-        # ADDITIONAL COST & EFFICIENCY INPUTS
-        # ============================================================
-        
-        seconds_efficiency = st.sidebar.number_input(
-            "Seconds Efficiency (%)",
-            value=90.0,
-            step=1.0
-        ) / 100
-        
-        packaging_cost_per_kg = st.sidebar.number_input(
-            "Packaging Cost ($/kg)",
-            value=4.0,
-            step=0.5
-        )
-        
-        overhead_pct = st.sidebar.number_input(
-            "Overhead Cost (%)",
-            value=19.0,
-            step=1.0
-        ) / 100
-    
-    
-        # ============================================================
-        # FILTERS (TIME → PLANT → VARIETY)
-        # ============================================================
-        st.sidebar.subheader("📅 Time Filters")
-    
-        fy_list = sorted(df["Fiscal Year"].unique())
-        selected_fy = st.sidebar.multiselect(
-            "Fiscal Year",
-            options=fy_list,
-            default=fy_list
-        )
-    
-        df_time = df[df["Fiscal Year"].isin(selected_fy)]
-    
-        fw_list = sorted(df_time["Fiscal Week No"].unique())
-        selected_fw = st.sidebar.multiselect(
-            "Fiscal Week",
-            options=fw_list,
-            default=fw_list
-        )
-    
-        df_time = df_time[df_time["Fiscal Week No"].isin(selected_fw)]
-    
-        # Plant
-        st.sidebar.subheader("🌱 Plant Filter")
-        plant_list = sorted(df_time["Plant"].dropna().unique())
-        selected_plants = st.sidebar.multiselect(
-            "Plant",
-            options=plant_list,
-            default=plant_list[:1] if plant_list else []
-        )
-    
-        df_plant = df_time[df_time["Plant"].isin(selected_plants)]
-    
-        # Variety
-        st.sidebar.subheader("🌿 Variety Filter")
-        variety_list = sorted(df_plant["Product Variety"].dropna().unique())
-        selected_varieties = st.sidebar.multiselect(
-            "Variety",
-            options=variety_list,
-            default=variety_list[:1] if variety_list else []
-        )
-    
-        filtered_df = df_plant[
-            df_plant["Product Variety"].isin(selected_varieties)
-        ].copy()
-    
-        # ============================================================
-        # MERGE OPPORTUNITY COST
-        # ============================================================
-        filtered_df = filtered_df.merge(
-            budget_lookup,
-            on=["Fiscal Year", "Fiscal Week No"],
-            how="left"
-        )
-    
-        if filtered_df["Budget Sales Price($)"].isna().any():
-            st.warning("⚠️ Some Fiscal Year / Week combinations missing budget mapping")
-    
-        # ============================================================
-        # CALCULATIONS
-        # ============================================================
-        filtered_df["Yield/Ha"] = (
-            filtered_df["Yield Kg"] / filtered_df["Variety Area (ha)"]
-        )
-    
-        filtered_df["Combined Platform Run time"] = (
-            filtered_df["Variety Area (ha)"] / harvest_speed
-        ).clip(upper=max_available_hours)
-    
-        filtered_df["Area_Harvested"] = (
-            filtered_df["Combined Platform Run time"] * harvest_speed
-        )
-    
-        filtered_df["Yield_Harvested"] = (
-            (1 - lost_damaged_pct)
-            * filtered_df["Yield/Ha"]
-            * filtered_df["Area_Harvested"]
-        )
-    
-        filtered_df["Yield_Lost"] = (
-            lost_damaged_pct
-            * filtered_df["Yield/Ha"]
-            * filtered_df["Area_Harvested"]
-        )
+    st.sidebar.header("🔧 Harvest Inputs")
 
-    
-        filtered_df["Opportunity Cost"] = (
-            filtered_df["Budget Sales Price($)"] * filtered_df["Yield_Lost"]* seconds_efficiency
-            - (
-                overhead_pct * filtered_df["Cost Per Kg - Total Harvest Cost"] * filtered_df["Yield_Lost"]
-                + packaging_cost_per_kg * filtered_df["Yield_Lost"] *seconds_efficiency
-            )
-        ).clip(lower=0)
+    harvest_speed = st.sidebar.number_input(
+        "Harvest speed (Ha / Hour)",
+        value=0.10,
+        step=0.01
+    )
 
-    
-        filtered_df["Platform Kg/hour"] = (
-            filtered_df["Yield_Harvested"]
-            / filtered_df["Combined Platform Run time"].replace(0, pd.NA)
-        )
-    
-        filtered_df["Platform cost/kg"] = (
-            (staff_wages / machine_to_staff)
-            / filtered_df["Platform Kg/hour"]
-        )
-    
-        filtered_df["Daily harvest savings"] = (
-            filtered_df["Yield_Harvested"]
-            * (
-                filtered_df["Cost Per Kg - Total Harvest Cost"]
-                - filtered_df["Platform cost/kg"]
-            )
-        )
-    
-        filtered_df["Savings - Yield loss cost"] = (
-            filtered_df["Daily harvest savings"]
-            - filtered_df["Opportunity Cost"]
-        ).clip(lower=0)
+    num_machines = st.sidebar.number_input(
+        "Number of Machines",
+        value=10,
+        step=1
+    )
 
-        filtered_df["Pick Date"] = pd.to_datetime(filtered_df["Pick Date"]).dt.date
+    session_length = st.sidebar.number_input(
+        "Session Length (Hours)",
+        value=8.0,
+        step=0.5
+    )
+
+    lost_damaged_pct = st.sidebar.number_input(
+        "Lost / Damaged %",
+        value=15.0,
+        step=1.0
+    ) / 100
+
+    # margin_reduction_factor = st.sidebar.number_input(
+    #     "Margin Reduction %",
+    #     value=100.0,
+    #     step=5.0
+    # ) / 100
+
+    machine_to_staff = st.sidebar.number_input(
+        "Machine to Staff Ratio",
+        value=5.0,
+        step=1.0
+    )
+
+    staff_wages = st.sidebar.number_input(
+        "Staff Wages ($/hr)",
+        value=32.0,
+        step=1.0
+    )
+
+    max_available_hours = num_machines * session_length
+
+        # ============================================================
+    # ADDITIONAL COST & EFFICIENCY INPUTS
+    # ============================================================
     
-        # ============================================================
-        # DISPLAY – DETAIL
-        # ============================================================
-        st.subheader("📊 Harvest Results")
-        st.dataframe(filtered_df, use_container_width=True)
+    seconds_efficiency = st.sidebar.number_input(
+        "Seconds Efficiency (%)",
+        value=90.0,
+        step=1.0
+    ) / 100
     
-        # ============================================================
-        # SUMMARY + TOTAL ROW
-        # ============================================================
-        grouped_summary = (
-            filtered_df
-            .groupby(["Plant", "Product Variety"], as_index=False)
-            .agg({
-                "Yield Kg": "sum",
-                "Area_Harvested": "sum",
-                "Yield_Harvested": "sum",
-                "Yield_Lost": "sum",
-                "Daily harvest savings": "sum",
-                "Savings - Yield loss cost": "sum"
-            })
+    packaging_cost_per_kg = st.sidebar.number_input(
+        "Packaging Cost ($/kg)",
+        value=4.0,
+        step=0.5
+    )
+    
+    overhead_pct = st.sidebar.number_input(
+        "Overhead Cost (%)",
+        value=19.0,
+        step=1.0
+    ) / 100
+
+
+    # ============================================================
+    # FILTERS (TIME → PLANT → VARIETY)
+    # ============================================================
+    st.sidebar.subheader("📅 Time Filters")
+
+    fy_list = sorted(df["Fiscal Year"].unique())
+    selected_fy = st.sidebar.multiselect(
+        "Fiscal Year",
+        options=fy_list,
+        default=fy_list
+    )
+
+    df_time = df[df["Fiscal Year"].isin(selected_fy)]
+
+    fw_list = sorted(df_time["Fiscal Week No"].unique())
+    selected_fw = st.sidebar.multiselect(
+        "Fiscal Week",
+        options=fw_list,
+        default=fw_list
+    )
+
+    df_time = df_time[df_time["Fiscal Week No"].isin(selected_fw)]
+
+    # Plant
+    st.sidebar.subheader("🌱 Plant Filter")
+    plant_list = sorted(df_time["Plant"].dropna().unique())
+    selected_plants = st.sidebar.multiselect(
+        "Plant",
+        options=plant_list,
+        default=plant_list[:1] if plant_list else []
+    )
+
+    df_plant = df_time[df_time["Plant"].isin(selected_plants)]
+
+    # Variety
+    st.sidebar.subheader("🌿 Variety Filter")
+    variety_list = sorted(df_plant["Product Variety"].dropna().unique())
+    selected_varieties = st.sidebar.multiselect(
+        "Variety",
+        options=variety_list,
+        default=variety_list[:1] if variety_list else []
+    )
+
+    filtered_df = df_plant[
+        df_plant["Product Variety"].isin(selected_varieties)
+    ].copy()
+
+    # ============================================================
+    # MERGE OPPORTUNITY COST
+    # ============================================================
+    filtered_df = filtered_df.merge(
+        budget_lookup,
+        on=["Fiscal Year", "Fiscal Week No"],
+        how="left"
+    )
+
+    if filtered_df["Budget Sales Price($)"].isna().any():
+        st.warning("⚠️ Some Fiscal Year / Week combinations missing budget mapping")
+
+    # ============================================================
+    # CALCULATIONS
+    # ============================================================
+    filtered_df["Yield/Ha"] = (
+        filtered_df["Yield Kg"] / filtered_df["Variety Area (ha)"]
+    )
+
+    filtered_df["Combined Platform Run time"] = (
+        filtered_df["Variety Area (ha)"] / harvest_speed
+    ).clip(upper=max_available_hours)
+
+    filtered_df["Area_Harvested"] = (
+        filtered_df["Combined Platform Run time"] * harvest_speed
+    )
+
+    filtered_df["Yield_Harvested"] = (
+        (1 - lost_damaged_pct)
+        * filtered_df["Yield/Ha"]
+        * filtered_df["Area_Harvested"]
+    )
+
+    filtered_df["Yield_Lost"] = (
+        lost_damaged_pct
+        * filtered_df["Yield/Ha"]
+        * filtered_df["Area_Harvested"]
+    )
+
+
+    filtered_df["Opportunity Cost"] = (
+        filtered_df["Budget Sales Price($)"] * filtered_df["Yield_Lost"]* seconds_efficiency
+        - (
+            overhead_pct * filtered_df["Cost Per Kg - Total Harvest Cost"] * filtered_df["Yield_Lost"]
+            + packaging_cost_per_kg * filtered_df["Yield_Lost"] *seconds_efficiency
         )
-    
-        total_row = pd.DataFrame({
-            "Plant": ["TOTAL"],
-            "Product Variety": [""],
-            "Yield Kg": [grouped_summary["Yield Kg"].sum()],
-            "Area_Harvested": [grouped_summary["Area_Harvested"].sum()],
-            "Yield_Harvested": [grouped_summary["Yield_Harvested"].sum()],
-            "Yield_Lost": [grouped_summary["Yield_Lost"].sum()],
-            "Daily harvest savings": [grouped_summary["Daily harvest savings"].sum()],
-            "Savings - Yield loss cost": [grouped_summary["Savings - Yield loss cost"].sum()]
+    ).clip(lower=0)
+
+
+    filtered_df["Platform Kg/hour"] = (
+        filtered_df["Yield_Harvested"]
+        / filtered_df["Combined Platform Run time"].replace(0, pd.NA)
+    )
+
+    filtered_df["Platform cost/kg"] = (
+        (staff_wages / machine_to_staff)
+        / filtered_df["Platform Kg/hour"]
+    )
+
+    filtered_df["Daily harvest savings"] = (
+        filtered_df["Yield_Harvested"]
+        * (
+            filtered_df["Cost Per Kg - Total Harvest Cost"]
+            - filtered_df["Platform cost/kg"]
+        )
+    )
+
+    filtered_df["Savings - Yield loss cost"] = (
+        filtered_df["Daily harvest savings"]
+        - filtered_df["Opportunity Cost"]
+    ).clip(lower=0)
+
+    filtered_df["Pick Date"] = pd.to_datetime(filtered_df["Pick Date"]).dt.date
+
+    # ============================================================
+    # DISPLAY – DETAIL
+    # ============================================================
+    st.subheader("📊 Harvest Results")
+    st.dataframe(filtered_df, use_container_width=True)
+
+    # ============================================================
+    # SUMMARY + TOTAL ROW
+    # ============================================================
+    grouped_summary = (
+        filtered_df
+        .groupby(["Plant", "Product Variety"], as_index=False)
+        .agg({
+            "Yield Kg": "sum",
+            "Area_Harvested": "sum",
+            "Yield_Harvested": "sum",
+            "Yield_Lost": "sum",
+            "Daily harvest savings": "sum",
+            "Savings - Yield loss cost": "sum"
         })
-    
-        grouped_summary = pd.concat(
-            [grouped_summary, total_row],
-            ignore_index=True
-        )
-    
-        st.subheader("📊 Combined Summary (Grouped)")
-        st.dataframe(grouped_summary, use_container_width=True)
+    )
+
+    total_row = pd.DataFrame({
+        "Plant": ["TOTAL"],
+        "Product Variety": [""],
+        "Yield Kg": [grouped_summary["Yield Kg"].sum()],
+        "Area_Harvested": [grouped_summary["Area_Harvested"].sum()],
+        "Yield_Harvested": [grouped_summary["Yield_Harvested"].sum()],
+        "Yield_Lost": [grouped_summary["Yield_Lost"].sum()],
+        "Daily harvest savings": [grouped_summary["Daily harvest savings"].sum()],
+        "Savings - Yield loss cost": [grouped_summary["Savings - Yield loss cost"].sum()]
+    })
+
+    grouped_summary = pd.concat(
+        [grouped_summary, total_row],
+        ignore_index=True
+    )
+
+    st.subheader("📊 Combined Summary (Grouped)")
+    st.dataframe(grouped_summary, use_container_width=True)
 
 with tab_dictionary:
 

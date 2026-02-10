@@ -422,6 +422,15 @@ with tab_results:
         .sort_values("Net_Savings", ascending=False)
     )
 
+    daily_savings = (
+        filtered_df
+        .groupby(["Pick Date", "Plant"], as_index=False)
+        .agg(
+            Net_Savings=("Savings - Yield loss cost", "sum")
+        )
+    )
+
+
 
     currency_cols = [
         "Daily_harvest_savings",
@@ -471,6 +480,17 @@ with tab_results:
         plant_savings.set_index("Plant")["Net_Savings"],
         use_container_width=True
     )
+
+    st.subheader("📈 Daily Net Savings Trend by Plant")
+    
+    st.line_chart(
+        daily_savings,
+        x="Pick Date",
+        y="Net_Savings",
+        color="Plant",
+        width="stretch"
+    )
+
 
     
 

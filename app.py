@@ -414,8 +414,24 @@ with tab_results:
         col: "${:,.0f}" for col in currency_cols
     })
 
+    display_df = styled_summary.rename(columns={
+        "Area_Harvested": "Area Harvested (Ha)",
+        "Yield_Harvested": "Yield Harvested (Kg)",
+        "Yield_Lost": "Yield Lost (Kg)",
+        "Daily harvest savings": "Daily Harvest Savings ($)",
+        "Savings - Yield loss cost": "Net Savings ($)"
+    })
+
+    styled_df = display_df.style.format({
+        "Area Harvested (Ha)": "{:,.2f}",
+        "Yield Harvested (Kg)": "{:,.2f}",
+        "Yield Lost (Kg)": "{:,.2f}",
+        "Daily Harvest Savings ($)": "${:,.2f}",
+        "Net Savings ($)": "${:,.2f}",
+    })
+
     st.subheader("📊 Combined Summary (Grouped)")
-    st.dataframe(styled_summary, use_container_width=True)
+    st.dataframe(styled_df, use_container_width=True)
 
     total_days = filtered_df.shape[0]
     positive_days = (

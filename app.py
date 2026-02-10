@@ -430,6 +430,23 @@ with tab_results:
         )
     )
 
+    plant_variety_savings = (
+        filtered_df
+        .groupby(["Plant", "Product Variety"], as_index=False)
+        .agg(
+            Net_Savings=("Savings - Yield loss cost", "sum")
+        )
+    )
+
+    stacked_df = (
+        plant_variety_savings
+        .pivot(
+            index="Plant",
+            columns="Product Variety",
+            values="Net_Savings"
+        )
+        .fillna(0)
+    )
 
 
     currency_cols = [
@@ -483,6 +500,14 @@ with tab_results:
         color="Plant",
         width="stretch"
     )
+
+    st.subheader("📊 Net Savings by Plant & Variety (Selected Year)")
+    
+    st.bar_chart(
+        stacked_df,
+        width="stretch"
+    )
+
 
 
 with tab_dictionary:

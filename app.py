@@ -225,16 +225,20 @@ with tab_results:
     # ============================================================
     st.sidebar.subheader("📅 Time Filters")
 
-    fy_list = sorted(df["Fiscal Year"].unique())
-
+    fy_list = sorted(
+        df["Fiscal Year"]
+        .isin([2025, 2026])
+    )
+    
+    fy_options = sorted(df.loc[fy_list, "Fiscal Year"].unique())
+    
     selected_fy = st.sidebar.selectbox(
         "Fiscal Year",
-        options=fy_list,
-        index=len(fy_list) - 1  # defaults to latest year
+        options=fy_options,
+        index=len(fy_options) - 1
     )
     
     df_time = df[df["Fiscal Year"] == selected_fy]
-
 
     fw_list = sorted(df_time["Fiscal Week No"].unique())
     selected_fw = st.sidebar.multiselect(
@@ -391,6 +395,16 @@ with tab_results:
         ignore_index=True
     )
 
+    plant_savings = (
+        filtered_df
+        .groupby("Plant", as_index=False)
+        .agg(
+            Net_Savings=("Savings - Yield loss cost", "sum")
+        )
+        .sort_values("Net_Savings", ascending=False)
+    )
+
+
     currency_cols = [
         "Daily_harvest_savings",
         "Savings_Yield_loss_cost"
@@ -418,6 +432,15 @@ with tab_results:
         value=f"{pct_positive_days:.1f}%",
         help="Percentage of harvest days where Savings – Yield loss cost was greater than zero"
     )
+
+    st.subheader("📈 Net Savings by Plant (Selected Period)")
+    
+    st.bar_chart(
+        plant_savings.set_index("Plant")["Net_Savings"],
+        use_container_width=True
+    )
+
+    
 
 
 

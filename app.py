@@ -420,7 +420,7 @@ with tab_results:
     })
 
 
-   styled_df = display_df.style.format({
+    styled_df = display_df.style.format({
         "Area Harvested (Ha)": "{:,.2f}",
         "Yield Harvested (Kg)": "{:,.2f}",
         "Yield Lost (Kg)": "{:,.2f}",

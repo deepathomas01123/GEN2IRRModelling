@@ -380,7 +380,7 @@ with tab_results:
 
     total_row = pd.DataFrame({
         "Plant": ["TOTAL"],
-        "Product Variety": [""],
+        #"Product Variety": [""],
         "Yield_Kg": [grouped_summary["Yield_Kg"].sum()],
         "Area_Harvested": [grouped_summary["Area_Harvested"].sum()],
         "Yield_Harvested": [grouped_summary["Yield_Harvested"].sum()],

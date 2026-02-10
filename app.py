@@ -13,7 +13,7 @@ tab_results, tab_dictionary = st.tabs(
 
 with tab_results:
     
-    st.title("🌱 Harvest Data Explorer")
+    st.title("🌱 GEN2IRR Modelling")
              
     
     # ============================================================

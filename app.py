@@ -410,9 +410,6 @@ with tab_results:
         "Savings_Yield_loss_cost"
     ]
     
-    styled_summary = grouped_summary.style.format({
-        col: "${:,.0f}" for col in currency_cols
-    })
 
     display_df = grouped_summary.rename(columns={
         "Area_Harvested": "Area Harvested (Ha)",
@@ -429,7 +426,6 @@ with tab_results:
         "Daily Harvest Savings ($)": "${:,.2f}",
         "Net Savings ($)": "${:,.2f}",
     })
-
     st.subheader("📊 Combined Summary (Grouped)")
     st.dataframe(styled_df, use_container_width=True)
 

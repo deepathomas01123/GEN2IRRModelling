@@ -330,11 +330,29 @@ with tab_results:
         )
     ).clip(lower=0)
 
+    labour_cost_per_machine = staff_wages / machine_to_staff
+
+    filtered_df["Platform cost/kg"] = (
+        labour_cost_per_machine
+        / filtered_df["Platform Kg/hour"]
+    )
+    
+    filtered_df["Platform cost/kg"] = (
+        filtered_df["Platform cost/kg"]
+        .replace([pd.NA, float("inf"), -float("inf")], 0)
+    )
 
     filtered_df["Platform Kg/hour"] = (
         filtered_df["Yield_Harvested"]
-        / filtered_df["Combined Platform Run time"].replace(0, pd.NA)
+        / filtered_df["Combined Platform Run time"]
     )
+
+    # Replace invalid values
+    filtered_df["Platform Kg/hour"] = (
+        filtered_df["Platform Kg/hour"]
+        .replace([0, float("inf"), -float("inf")], pd.NA)
+    )
+
 
     filtered_df["Platform cost/kg"] = (
         (staff_wages / machine_to_staff)
@@ -347,7 +365,8 @@ with tab_results:
             filtered_df["Cost Per Kg - Total Harvest Cost"]
             - filtered_df["Platform cost/kg"]
         )
-    )
+    ).clip(lower =0)
+    
 
     filtered_df["Savings - Yield loss cost"] = (
         filtered_df["Daily harvest savings"]
@@ -380,7 +399,7 @@ with tab_results:
 
     total_row = pd.DataFrame({
         "Plant": ["TOTAL"],
-        #"Product Variety": [""],
+        "Product Variety": [""],
         "Yield_Kg": [grouped_summary["Yield_Kg"].sum()],
         "Area_Harvested": [grouped_summary["Area_Harvested"].sum()],
         "Yield_Harvested": [grouped_summary["Yield_Harvested"].sum()],

@@ -415,17 +415,19 @@ with tab_results:
         "Area_Harvested": "Area Harvested (Ha)",
         "Yield_Harvested": "Yield Harvested (Kg)",
         "Yield_Lost": "Yield Lost (Kg)",
-        "Daily harvest savings": "Daily Harvest Savings ($)",
-        "Savings - Yield loss cost": "Net Savings ($)"
+        "Daily_harvest_savings": "Daily Harvest Savings ($)",
+        "Savings_Yield_loss_cost": "Net Savings ($)"
     })
 
-    styled_df = display_df.style.format({
+
+   styled_df = display_df.style.format({
         "Area Harvested (Ha)": "{:,.2f}",
         "Yield Harvested (Kg)": "{:,.2f}",
         "Yield Lost (Kg)": "{:,.2f}",
         "Daily Harvest Savings ($)": "${:,.2f}",
         "Net Savings ($)": "${:,.2f}",
     })
+
     st.subheader("📊 Combined Summary (Grouped)")
     st.dataframe(styled_df, use_container_width=True)
 

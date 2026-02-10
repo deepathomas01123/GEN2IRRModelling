@@ -414,7 +414,7 @@ with tab_results:
         col: "${:,.0f}" for col in currency_cols
     })
 
-    display_df = styled_summary.rename(columns={
+    display_df = grouped_summary.rename(columns={
         "Area_Harvested": "Area Harvested (Ha)",
         "Yield_Harvested": "Yield Harvested (Kg)",
         "Yield_Lost": "Yield Lost (Kg)",

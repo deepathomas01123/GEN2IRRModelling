@@ -13,7 +13,7 @@ tab_results, tab_dictionary = st.tabs(
 
 with tab_results:
     
-    st.title("🌱 GEN2IRR Modelling")
+    st.title("🌱 GEN2 IRR Modelling")
              
     
     # ============================================================

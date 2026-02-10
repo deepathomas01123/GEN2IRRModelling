@@ -226,13 +226,15 @@ with tab_results:
     st.sidebar.subheader("📅 Time Filters")
 
     fy_list = sorted(df["Fiscal Year"].unique())
-    selected_fy = st.sidebar.multiselect(
+
+    selected_fy = st.sidebar.selectbox(
         "Fiscal Year",
         options=fy_list,
-        default=fy_list
+        index=len(fy_list) - 1  # defaults to latest year
     )
+    
+    df_time = df[df["Fiscal Year"] == selected_fy]
 
-    df_time = df[df["Fiscal Year"].isin(selected_fy)]
 
     fw_list = sorted(df_time["Fiscal Week No"].unique())
     selected_fw = st.sidebar.multiselect(
@@ -257,15 +259,24 @@ with tab_results:
     # Variety
     st.sidebar.subheader("🌿 Variety Filter")
     variety_list = sorted(df_plant["Product Variety"].dropna().unique())
+
+    # Add Select All option
+    variety_options = ["Select All"] + variety_list
+    
     selected_varieties = st.sidebar.multiselect(
         "Variety",
-        options=variety_list,
-        default=variety_list[:1] if variety_list else []
+        options=variety_options,
+        default=["Select All"]
     )
-
+    
+    # Handle Select All logic
+    if "Select All" in selected_varieties:
+        selected_varieties = variety_list
+    
     filtered_df = df_plant[
         df_plant["Product Variety"].isin(selected_varieties)
     ].copy()
+
 
     # ============================================================
     # MERGE OPPORTUNITY COST

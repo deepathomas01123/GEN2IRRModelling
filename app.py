@@ -330,8 +330,23 @@ with tab_results:
         )
     ).clip(lower=0)
 
+    
+    # 1️⃣ Platform productivity
+    filtered_df["Platform Kg/hour"] = (
+        filtered_df["Yield_Harvested"]
+        / filtered_df["Combined Platform Run time"]
+    )
+    
+    # Replace invalid productivity
+    filtered_df["Platform Kg/hour"] = (
+        filtered_df["Platform Kg/hour"]
+        .replace([0, float("inf"), -float("inf")], pd.NA)
+    )
+    
+    # 2️⃣ Labour cost per machine
     labour_cost_per_machine = staff_wages / machine_to_staff
-
+    
+    # 3️⃣ Platform cost per kg (SAFE)
     filtered_df["Platform cost/kg"] = (
         labour_cost_per_machine
         / filtered_df["Platform Kg/hour"]
@@ -342,22 +357,6 @@ with tab_results:
         .replace([pd.NA, float("inf"), -float("inf")], 0)
     )
 
-    filtered_df["Platform Kg/hour"] = (
-        filtered_df["Yield_Harvested"]
-        / filtered_df["Combined Platform Run time"]
-    )
-
-    # Replace invalid values
-    filtered_df["Platform Kg/hour"] = (
-        filtered_df["Platform Kg/hour"]
-        .replace([0, float("inf"), -float("inf")], pd.NA)
-    )
-
-
-    filtered_df["Platform cost/kg"] = (
-        (staff_wages / machine_to_staff)
-        / filtered_df["Platform Kg/hour"]
-    )
 
     filtered_df["Daily harvest savings"] = (
         filtered_df["Yield_Harvested"]

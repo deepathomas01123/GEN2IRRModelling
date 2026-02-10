@@ -474,13 +474,6 @@ with tab_results:
         help="Percentage of harvest days where Savings – Yield loss cost was greater than zero"
     )
 
-    st.subheader("📈 Net Savings by Plant (Selected Period)")
-    
-    st.bar_chart(
-        plant_savings.set_index("Plant")["Net_Savings"],
-        use_container_width=True
-    )
-
     st.subheader("📈 Daily Net Savings Trend by Plant")
     
     st.line_chart(
@@ -490,12 +483,6 @@ with tab_results:
         color="Plant",
         width="stretch"
     )
-
-
-    
-
-
-
 
 
 with tab_dictionary:

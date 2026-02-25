@@ -197,6 +197,19 @@ with tab_results:
 
     max_available_hours = num_machines * session_length
 
+    machine_cost = st.sidebar.number_input(
+            "Machine Cost",
+            value=100000,
+            step=2000
+        ) 
+    number_of_machines = st.sidebar.number_input(
+        "No of Machines",
+        value = 1,
+        step = 1
+    )
+
+    total_spend = machine_cost*number_of_machines
+
         # ============================================================
     # ADDITIONAL COST & EFFICIENCY INPUTS
     # ============================================================
@@ -507,8 +520,42 @@ with tab_results:
         stacked_df,
         width="stretch"
     )
-
-
+    # ============================================================
+    # ANNUAL SAVINGS & PAYBACK
+    # ============================================================
+    
+    # Total savings for selected year
+    total_savings_year = grouped_summary.loc[
+        grouped_summary["Plant"] == "TOTAL",
+        "Savings_Yield_loss_cost"
+    ].values[0]
+    
+    annual_net_savings = total_savings_year - total_spend
+    
+    # Avoid division by zero
+    if total_savings_year > 0:
+        payback_period_years = total_spend / total_savings_year
+    else:
+        payback_period_years = 0
+    
+    st.markdown("## 💰 Investment Summary")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    col1.metric(
+        "Total Machine Investment",
+        f"${total_spend:,.0f}"
+    )
+    
+    col2.metric(
+        "Annual Net Savings",
+        f"${annual_net_savings:,.0f}"
+    )
+    
+    col3.metric(
+        "Payback Period (Years)",
+        f"{payback_period_years:.2f} yrs"
+    )
 
 with tab_dictionary:
 

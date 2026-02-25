@@ -197,14 +197,6 @@ with tab_results:
 
     max_available_hours = num_machines * session_length
 
-    
-    st.sidebar.markdown(
-        f"**Total Investment:**  \n"
-        f"💲 `{total_spend:,.0f}`"
-    )
-
-   
-        # ============================================================
     # ADDITIONAL COST & EFFICIENCY INPUTS
     # ============================================================
     

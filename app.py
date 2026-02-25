@@ -197,25 +197,6 @@ with tab_results:
 
     max_available_hours = num_machines * session_length
 
-# MACHINE INVESTEMENT CALCULATIONS
-
-    st.sidebar.subheader("💰 Machine Investment")
-
-    col_m1, col_m2 = st.sidebar.columns(2)
-    
-    machine_cost = col_m1.number_input(
-        "Machine Cost",
-        value=100000,
-        step=2000
-    )
-    
-    number_of_machines = col_m2.number_input(
-        "No. Machines",
-        value=1,
-        step=1
-    )
-    
-    total_spend = machine_cost * number_of_machines
     
     st.sidebar.markdown(
         f"**Total Investment:**  \n"
@@ -533,6 +514,36 @@ with tab_results:
         stacked_df,
         width="stretch"
     )
+
+    # ============================================================
+    # MACHINE INVESTMENT (Move ABOVE Investment Summary)
+    # ============================================================
+    
+    st.markdown("---")
+    st.subheader("💰 Machine Investment")
+    
+    col_m1, col_m2 = st.columns(2)
+    
+    machine_cost = col_m1.number_input(
+        "Machine Cost",
+        value=100000,
+        step=2000
+    )
+    
+    number_of_machines = col_m2.number_input(
+        "No. Machines",
+        value=1,
+        step=1
+    )
+    
+    total_spend = machine_cost * number_of_machines
+    
+    st.markdown(
+        f"**Total Investment:**  \n"
+        f"💲 `{total_spend:,.0f}`"
+    )
+    
+    st.markdown("---")
      # ============================================================
     # INVESTMENT SUMMARY
     # ============================================================

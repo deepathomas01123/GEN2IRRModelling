@@ -197,19 +197,32 @@ with tab_results:
 
     max_available_hours = num_machines * session_length
 
-    machine_cost = st.sidebar.number_input(
-            "Machine Cost",
-            value=100000,
-            step=2000
-        ) 
-    number_of_machines = st.sidebar.number_input(
-        "No of Machines",
-        value = 1,
-        step = 1
+# MACHINE INVESTEMENT CALCULATIONS
+
+    st.sidebar.subheader("💰 Machine Investment")
+
+    col_m1, col_m2 = st.sidebar.columns(2)
+    
+    machine_cost = col_m1.number_input(
+        "Machine Cost",
+        value=100000,
+        step=2000
+    )
+    
+    number_of_machines = col_m2.number_input(
+        "No. Machines",
+        value=1,
+        step=1
+    )
+    
+    total_spend = machine_cost * number_of_machines
+    
+    st.sidebar.markdown(
+        f"**Total Investment:**  \n"
+        f"💲 `{total_spend:,.0f}`"
     )
 
-    total_spend = machine_cost*number_of_machines
-
+   
         # ============================================================
     # ADDITIONAL COST & EFFICIENCY INPUTS
     # ============================================================
@@ -520,17 +533,14 @@ with tab_results:
         stacked_df,
         width="stretch"
     )
-       # ============================================================
-    # ANNUAL SAVINGS & PAYBACK
+     # ============================================================
+    # INVESTMENT SUMMARY
     # ============================================================
     
-    # Calculate directly from filtered_df (SAFER)
     total_savings_year = filtered_df["Savings - Yield loss cost"].sum()
     
-    # Annual Net Savings
-    annual_net_savings = total_savings_year - total_spend
+    net_savings = total_savings_year - total_spend
     
-    # Payback calculation
     if total_savings_year > 0:
         payback_period_years = total_spend / total_savings_year
     else:
@@ -538,7 +548,7 @@ with tab_results:
     
     st.markdown("## 💰 Investment Summary")
     
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     
     col1.metric(
         "Total Machine Investment",
@@ -550,16 +560,21 @@ with tab_results:
         f"${total_savings_year:,.0f}"
     )
     
+    col3.metric(
+        "Net Savings (After Investment)",
+        f"${net_savings:,.0f}",
+        delta=f"{net_savings:,.0f}"
+    )
+    
     if payback_period_years:
-        col3.metric(
-            "Payback Period (Years)",
+        col4.metric(
+            "Payback Period",
             f"{payback_period_years:.2f} yrs"
         )
     else:
-        col3.metric(
-            "Payback Period (Years)",
-            "No Payback",
-            help="Savings are zero or negative"
+        col4.metric(
+            "Payback Period",
+            "No Payback"
         )
 
 with tab_dictionary:

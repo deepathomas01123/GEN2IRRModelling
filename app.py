@@ -520,23 +520,21 @@ with tab_results:
         stacked_df,
         width="stretch"
     )
-    # ============================================================
+       # ============================================================
     # ANNUAL SAVINGS & PAYBACK
     # ============================================================
     
-    # Total savings for selected year
-    total_savings_year = grouped_summary.loc[
-        grouped_summary["Plant"] == "TOTAL",
-        "Savings_Yield_loss_cost"
-    ].values[0]
+    # Calculate directly from filtered_df (SAFER)
+    total_savings_year = filtered_df["Savings - Yield loss cost"].sum()
     
+    # Annual Net Savings
     annual_net_savings = total_savings_year - total_spend
     
-    # Avoid division by zero
+    # Payback calculation
     if total_savings_year > 0:
         payback_period_years = total_spend / total_savings_year
     else:
-        payback_period_years = 0
+        payback_period_years = None
     
     st.markdown("## 💰 Investment Summary")
     
@@ -548,14 +546,21 @@ with tab_results:
     )
     
     col2.metric(
-        "Annual Net Savings",
-        f"${annual_net_savings:,.0f}"
+        "Total Savings (Selected Year)",
+        f"${total_savings_year:,.0f}"
     )
     
-    col3.metric(
-        "Payback Period (Years)",
-        f"{payback_period_years:.2f} yrs"
-    )
+    if payback_period_years:
+        col3.metric(
+            "Payback Period (Years)",
+            f"{payback_period_years:.2f} yrs"
+        )
+    else:
+        col3.metric(
+            "Payback Period (Years)",
+            "No Payback",
+            help="Savings are zero or negative"
+        )
 
 with tab_dictionary:
 

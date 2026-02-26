@@ -223,21 +223,17 @@ with tab_results:
     # FILTERS (TIME → PLANT → VARIETY)
     # ============================================================
     st.sidebar.subheader("📅 Time Filters")
+    selected_fy = 2025
 
-    fy_list = sorted(
-        df["Fiscal Year"]
-        .isin([2025])
-    )
-    
-    fy_options = sorted(df.loc[fy_list, "Fiscal Year"].unique())
-    
-    selected_fy = st.sidebar.selectbox(
+    st.sidebar.selectbox(
         "Fiscal Year",
-        options=fy_options,
-        index=len(fy_options) - 1
+        options=[2025],
+        index=0,
+        disabled=True   # makes it visible but not editable
     )
     
-    df_time = df[df["Fiscal Year"] == selected_fy]
+    df_time = df[df["Fiscal Year"] == 2025]
+    
 
     fw_list = sorted(df_time["Fiscal Week No"].unique())
     selected_fw = st.sidebar.multiselect(

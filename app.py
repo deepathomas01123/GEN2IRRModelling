@@ -540,11 +540,11 @@ with tab_results:
     # INVESTMENT SUMMARY
     # ============================================================
     
-    # ============================================================
-    # INVESTMENT SUMMARY (Positive Savings Only)
+       # ============================================================
+    # INVESTMENT SUMMARY
     # ============================================================
     
-    # Take only positive daily values
+    # Positive savings only
     positive_savings = filtered_df.loc[
         filtered_df["Savings - Yield loss cost"] > 0,
         "Savings - Yield loss cost"
@@ -562,7 +562,7 @@ with tab_results:
     
     st.markdown("## 💰 Investment Summary")
     
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     
     col1.metric(
         "Total Machine Investment",
@@ -570,11 +570,16 @@ with tab_results:
     )
     
     col2.metric(
-        "Annual Net Savings (Positive Days Only)",
-        f"${annual_net_savings:,.0f}"
+        "Total Annual Savings (Positive Days Only)",
+        f"${total_savings_year:,.0f}"
     )
     
     col3.metric(
+        "Net Position After Year 1",
+        f"${annual_net_savings:,.0f}"
+    )
+    
+    col4.metric(
         "Payback Period (Years)",
         f"{payback_period_years:.2f} yrs"
     )

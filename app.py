@@ -522,10 +522,14 @@ with tab_results:
         step=2000
     )
     
-    # Reflect previously defined machine count
     col_m2.markdown(
-        f"**No. of Machines:**  \n"
-        f"🔢 `{num_machines}`"
+        f"""
+        <div style="font-size:18px;">
+            <strong>No. of Machines:</strong><br>
+            <span style="font-size:32px; font-weight:600;">{num_machines}</span>
+        </div>
+        """,
+        unsafe_allow_html=True
     )
     
     total_spend = machine_cost * num_machines

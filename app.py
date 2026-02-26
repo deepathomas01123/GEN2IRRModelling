@@ -660,8 +660,6 @@ with tab_results:
         "Cumulative Net Position ($)": cumulative_position
     })
     
-    st.subheader("📈 10-Year Net Position Projection")
-    
     import altair as alt
 
     st.subheader("📈 10-Year Net Position Projection")

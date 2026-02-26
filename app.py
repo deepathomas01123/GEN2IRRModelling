@@ -226,7 +226,7 @@ with tab_results:
 
     fy_list = sorted(
         df["Fiscal Year"]
-        .isin([2025, 2026])
+        .isin([2025])
     )
     
     fy_options = sorted(df.loc[fy_list, "Fiscal Year"].unique())
@@ -518,7 +518,7 @@ with tab_results:
     
     machine_cost = col_m1.number_input(
         "Machine Cost",
-        value=100000,
+        value=250000,
         step=2000
     )
     

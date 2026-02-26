@@ -522,14 +522,9 @@ with tab_results:
         step=2000
     )
     
-    col_m2.markdown(
-        f"""
-        <div style="font-size:18px;">
-            <strong>No. of Machines:</strong><br>
-            <span style="font-size:32px; font-weight:600;">{num_machines}</span>
-        </div>
-        """,
-        unsafe_allow_html=True
+    col_m2.metric(
+        "No. of Machines",
+        f"{num_machines}"
     )
     
     total_spend = machine_cost * num_machines

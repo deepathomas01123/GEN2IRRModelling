@@ -540,18 +540,29 @@ with tab_results:
     # INVESTMENT SUMMARY
     # ============================================================
     
-    total_savings_year = filtered_df["Savings - Yield loss cost"].sum()
+    # ============================================================
+    # INVESTMENT SUMMARY (Positive Savings Only)
+    # ============================================================
     
-    net_savings = total_savings_year - total_spend
+    # Take only positive daily values
+    positive_savings = filtered_df.loc[
+        filtered_df["Savings - Yield loss cost"] > 0,
+        "Savings - Yield loss cost"
+    ]
     
+    total_savings_year = positive_savings.sum()
+    
+    annual_net_savings = total_savings_year - total_spend
+    
+    # Avoid division by zero
     if total_savings_year > 0:
         payback_period_years = total_spend / total_savings_year
     else:
-        payback_period_years = None
+        payback_period_years = 0
     
     st.markdown("## 💰 Investment Summary")
     
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3 = st.columns(3)
     
     col1.metric(
         "Total Machine Investment",
@@ -559,27 +570,14 @@ with tab_results:
     )
     
     col2.metric(
-        "Total Savings (Selected Year)",
-        f"${total_savings_year:,.0f}"
+        "Annual Net Savings (Positive Days Only)",
+        f"${annual_net_savings:,.0f}"
     )
     
     col3.metric(
-        "Net Savings (After Investment)",
-        f"${net_savings:,.0f}",
-        delta=f"{net_savings:,.0f}"
+        "Payback Period (Years)",
+        f"{payback_period_years:.2f} yrs"
     )
-    
-    if payback_period_years:
-        col4.metric(
-            "Payback Period",
-            f"{payback_period_years:.2f} yrs"
-        )
-    else:
-        col4.metric(
-            "Payback Period",
-            "No Payback"
-        )
-
 with tab_dictionary:
 
     st.subheader("📘 Harvest Model – Data Dictionary")

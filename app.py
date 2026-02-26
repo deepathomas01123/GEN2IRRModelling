@@ -589,20 +589,61 @@ with tab_results:
     )
 
     # ============================================================
-    #  MULTI-YEAR NET POSITION PROJECTION
+    # ANNUAL SAVINGS & PAYBACK + MULTI-YEAR PROJECTION
     # ============================================================
     
-    st.markdown("---")
-    st.subheader("📈 Multi-Year Net Position Projection")
+    st.markdown("## 💰 Investment Summary")
     
+    # Total savings for selected year
+    total_savings_year = grouped_summary.loc[
+        grouped_summary["Plant"] == "TOTAL",
+        "Savings_Yield_loss_cost"
+    ].values[0]
+    
+    # ---- SLIDER (1–10 years, default 10) ----
     projection_years = st.slider(
-        "Projection Years",
-        min_value=5,
-        max_value=15,
+        "Projection Period (Years)",
+        min_value=1,
+        max_value=10,
         value=10
     )
     
-    years = list(range(0, projection_years + 1))
+    # ---- Total Spend ----
+    total_spend = machine_cost * number_of_machines
+    
+    # ---- Net Position based on slider ----
+    net_position_selected_year = (
+        total_savings_year * projection_years
+    ) - total_spend
+    
+    # ---- Payback ----
+    if total_savings_year > 0:
+        payback_period_years = total_spend / total_savings_year
+    else:
+        payback_period_years = 0
+    
+    col1, col2, col3 = st.columns(3)
+    
+    col1.metric(
+        "Total Machine Investment",
+        f"${total_spend:,.0f}"
+    )
+    
+    col2.metric(
+        f"Net Position After {projection_years} Years",
+        f"${net_position_selected_year:,.0f}"
+    )
+    
+    col3.metric(
+        "Payback Period",
+        f"{payback_period_years:.2f} yrs"
+    )
+    
+    # ============================================================
+    # MULTI-YEAR PROJECTION CHART (DEFAULT 10 YEARS)
+    # ============================================================
+    
+    years = list(range(0, 11))  # Always show 10-year projection
     
     cumulative_position = []
     
@@ -619,6 +660,8 @@ with tab_results:
         "Cumulative Net Position ($)": cumulative_position
     })
     
+    st.subheader("📈 10-Year Net Position Projection")
+    
     st.line_chart(
         projection_df,
         x="Year",
@@ -626,7 +669,7 @@ with tab_results:
         use_container_width=True
     )
     
-    # Highlight break-even year
+    # Break-even message
     if total_savings_year > 0:
         break_even_year = total_spend / total_savings_year
         st.success(f"📍 Break-even occurs at approximately Year {break_even_year:.2f}")

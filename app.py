@@ -662,12 +662,37 @@ with tab_results:
     
     st.subheader("📈 10-Year Net Position Projection")
     
-    st.line_chart(
-        projection_df,
-        x="Year",
-        y="Cumulative Net Position ($)",
-        use_container_width=True
+    import altair as alt
+
+    st.subheader("📈 10-Year Net Position Projection")
+    
+    base = alt.Chart(projection_df).encode(
+        x=alt.X("Year:Q"),
+        y=alt.Y("Cumulative Net Position ($):Q")
     )
+    
+    # Main projection line
+    projection_line = base.mark_line(point=True)
+    
+    # Bold zero line
+    zero_line = alt.Chart(
+        pd.DataFrame({
+            "y": [0]
+        })
+    ).mark_rule(
+        strokeWidth=3,
+        color="black"
+    ).encode(
+        y="y:Q"
+    )
+    
+    chart = (
+        projection_line + zero_line
+    ).properties(
+        height=400
+    )
+    
+    st.altair_chart(chart, use_container_width=True)
     
     # Break-even message
     if total_savings_year > 0:

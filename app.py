@@ -522,23 +522,18 @@ with tab_results:
         step=2000
     )
     
-    number_of_machines = col_m2.number_input(
-        "No. Machines",
-        value=1,
-        step=1
+    # Reflect previously defined machine count
+    col_m2.markdown(
+        f"**No. of Machines:**  \n"
+        f"🔢 `{num_machines}`"
     )
     
-    total_spend = machine_cost * number_of_machines
+    total_spend = machine_cost * num_machines
     
     st.markdown(
         f"**Total Investment:**  \n"
         f"💲 `{total_spend:,.0f}`"
     )
-    
-    st.markdown("---")
-     # ============================================================
-    # INVESTMENT SUMMARY
-    # ============================================================
     
        # ============================================================
     # INVESTMENT SUMMARY

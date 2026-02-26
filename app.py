@@ -609,7 +609,7 @@ with tab_results:
     )
     
     # ---- Total Spend ----
-    total_spend = machine_cost * number_of_machines
+    total_spend = machine_cost * num_machines
     
     # ---- Net Position based on slider ----
     net_position_selected_year = (

@@ -587,6 +587,51 @@ with tab_results:
         "Payback Period (Years)",
         f"{payback_period_years:.2f} yrs"
     )
+
+    # ============================================================
+    #  MULTI-YEAR NET POSITION PROJECTION
+    # ============================================================
+    
+    st.markdown("---")
+    st.subheader("📈 Multi-Year Net Position Projection")
+    
+    projection_years = st.slider(
+        "Projection Years",
+        min_value=5,
+        max_value=15,
+        value=10
+    )
+    
+    years = list(range(0, projection_years + 1))
+    
+    cumulative_position = []
+    
+    for year in years:
+        if year == 0:
+            cumulative_position.append(-total_spend)
+        else:
+            cumulative_position.append(
+                -total_spend + (total_savings_year * year)
+            )
+    
+    projection_df = pd.DataFrame({
+        "Year": years,
+        "Cumulative Net Position ($)": cumulative_position
+    })
+    
+    st.line_chart(
+        projection_df,
+        x="Year",
+        y="Cumulative Net Position ($)",
+        use_container_width=True
+    )
+    
+    # Highlight break-even year
+    if total_savings_year > 0:
+        break_even_year = total_spend / total_savings_year
+        st.success(f"📍 Break-even occurs at approximately Year {break_even_year:.2f}")
+    else:
+        st.warning("⚠️ No positive savings — break-even not achievable.")
 with tab_dictionary:
 
     st.subheader("📘 Harvest Model – Data Dictionary")

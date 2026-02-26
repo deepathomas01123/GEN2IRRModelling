@@ -564,29 +564,29 @@ with tab_results:
     else:
         payback_period_years = 0
     
-    st.markdown("## 💰 Investment Summary")
+    # st.markdown("## 💰 Investment Summary")
     
-    col1, col2, col3, col4 = st.columns(4)
+    # col1, col2, col3, col4 = st.columns(4)
     
-    col1.metric(
-        "Total Machine Investment",
-        f"${total_spend:,.0f}"
-    )
+    # col1.metric(
+    #     "Total Machine Investment",
+    #     f"${total_spend:,.0f}"
+    # )
     
-    col2.metric(
-        "Total Annual Savings (Positive Days Only)",
-        f"${total_savings_year:,.0f}"
-    )
+    # col2.metric(
+    #     "Total Annual Savings (Positive Days Only)",
+    #     f"${total_savings_year:,.0f}"
+    # )
     
-    col3.metric(
-        "Net Position After Year 1",
-        f"${annual_net_savings:,.0f}"
-    )
+    # col3.metric(
+    #     "Net Position After Year 1",
+    #     f"${annual_net_savings:,.0f}"
+    # )
     
-    col4.metric(
-        "Payback Period (Years)",
-        f"{payback_period_years:.2f} yrs"
-    )
+    # col4.metric(
+    #     "Payback Period (Years)",
+    #     f"{payback_period_years:.2f} yrs"
+    # )
 
     # ============================================================
     # ANNUAL SAVINGS & PAYBACK + MULTI-YEAR PROJECTION

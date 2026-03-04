@@ -360,29 +360,21 @@ with tab_results:
         )
     ).clip(lower=0)
 
-    # Platform productivity
-    filtered_df["Platform Kg/hour"] = (
-        filtered_df["Yield_Harvested"]
-        / filtered_df["Combined Platform Run time"].replace(0, pd.NA)
-    )
-
-    filtered_df["Platform Kg/hour"] = (
-        filtered_df["Platform Kg/hour"]
-        .replace([float("inf"), -float("inf")], pd.NA)
+    # Platform productivity — guard against zero runtime
+    filtered_df["Platform Kg/hour"] = np.where(
+        filtered_df["Combined Platform Run time"] > 0,
+        filtered_df["Yield_Harvested"] / filtered_df["Combined Platform Run time"],
+        np.nan
     )
 
     # Labour cost per machine
     labour_cost_per_machine = staff_wages / machine_to_staff
 
-    # Platform cost per kg
-    filtered_df["Platform cost/kg"] = (
-        labour_cost_per_machine
-        / filtered_df["Platform Kg/hour"]
-    )
-
-    filtered_df["Platform cost/kg"] = (
-        filtered_df["Platform cost/kg"]
-        .replace([pd.NA, float("inf"), -float("inf")], 0)
+    # Platform cost per kg — guard against zero or NaN productivity
+    filtered_df["Platform cost/kg"] = np.where(
+        (filtered_df["Platform Kg/hour"] > 0) & (~np.isnan(filtered_df["Platform Kg/hour"])),
+        labour_cost_per_machine / filtered_df["Platform Kg/hour"],
+        0.0
     )
 
     filtered_df["Daily harvest savings"] = (

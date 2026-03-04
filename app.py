@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 
 st.set_page_config(
     layout="wide"
@@ -20,13 +21,10 @@ with tab_results:
     # LOAD SALES BUDGET (NUMERIC FISCAL YEAR)
     # ============================================================
     @st.cache_data
-
     def load_sales_budget():
         FILE_PATH = "data/SalesBudget.xlsx"
-        # Header row usually NOT first row in finance files
         df = pd.read_excel(FILE_PATH, header=0)
     
-        # Clean column names
         df.columns = (
             df.columns.astype(str)
             .str.replace("\xa0", " ", regex=False)
@@ -34,7 +32,6 @@ with tab_results:
             .str.strip()
         )
     
-        # Fiscal Week
         df["Fiscal Week No"] = (
             df["Week"]
             .astype(str)
@@ -42,7 +39,6 @@ with tab_results:
             .astype(int)
         )
     
-        # BX Budget Return (Kg) → numeric
         df["Budget Sales Price($)"] = (
             df["BX Budget Return (Kg)"]
             .astype(str)
@@ -50,7 +46,6 @@ with tab_results:
             .astype(float)
         )
     
-        # CY26 → 2026
         df["Fiscal Year"] = (
             df["CY"]
             .astype(str)
@@ -73,7 +68,6 @@ with tab_results:
     df.columns = df.columns.str.strip()
     st.success("Harvest file uploaded successfully!")
 
-    # Required columns
     required_columns = [
         "Costa Fiscal Year",
         "Pick Date",
@@ -90,7 +84,6 @@ with tab_results:
         st.error(f"Missing columns: {missing}")
         st.stop()
 
-    # Ensure correct types
     df["Fiscal Year"] = (
         df["Costa Fiscal Year"]
         .astype(str)
@@ -108,15 +101,12 @@ with tab_results:
 
     st.sidebar.subheader("📦 Harvest Speed Configuration")
     
-    # ---- initialise state (only once) ----
     if "minutes_per_100m" not in st.session_state:
         st.session_state.minutes_per_100m = 8.5
     
     if "time_per_cycle" not in st.session_state:
         st.session_state.time_per_cycle = st.session_state.minutes_per_100m * 60 / 33
     
-    
-    # ---- callbacks ----
     def update_time_per_cycle():
         st.session_state.time_per_cycle = (
             st.session_state.minutes_per_100m * 60 / 33
@@ -126,7 +116,6 @@ with tab_results:
         st.session_state.minutes_per_100m = (
             st.session_state.time_per_cycle * 33 / 60
         )
-    
     
     with st.sidebar.container():
     
@@ -144,7 +133,6 @@ with tab_results:
             on_change=update_minutes_per_100m
         )
     
-        # ---- final calculated harvest speed ----
         harvest_speed = (
             (100 * 8.5 / 3)
             / (st.session_state.minutes_per_100m / 60)
@@ -158,7 +146,6 @@ with tab_results:
             """
         )
     
-
     num_machines = st.sidebar.number_input(
         "Number of Machines",
         value=10,
@@ -177,12 +164,6 @@ with tab_results:
         step=1.0
     ) / 100
 
-    # margin_reduction_factor = st.sidebar.number_input(
-    #     "Margin Reduction %",
-    #     value=100.0,
-    #     step=5.0
-    # ) / 100
-
     machine_to_staff = st.sidebar.number_input(
         "Machine to Staff Ratio",
         value=5.0,
@@ -197,9 +178,6 @@ with tab_results:
 
     max_available_hours = num_machines * session_length
 
-    # ADDITIONAL COST & EFFICIENCY INPUTS
-    # ============================================================
-    
     seconds_efficiency = st.sidebar.number_input(
         "Seconds Efficiency (%)",
         value=90.0,
@@ -218,7 +196,6 @@ with tab_results:
         step=1.0
     ) / 100
 
-
     # ============================================================
     # FILTERS (TIME → PLANT → VARIETY)
     # ============================================================
@@ -229,11 +206,10 @@ with tab_results:
         "Fiscal Year",
         options=[2025],
         index=0,
-        disabled=True   # makes it visible but not editable
+        disabled=True
     )
     
     df_time = df[df["Fiscal Year"] == 2025]
-    
 
     fw_list = sorted(df_time["Fiscal Week No"].unique())
     selected_fw = st.sidebar.multiselect(
@@ -244,7 +220,6 @@ with tab_results:
 
     df_time = df_time[df_time["Fiscal Week No"].isin(selected_fw)]
 
-    # Plant
     st.sidebar.subheader("🌱 Plant Filter")
     plant_list = sorted(df_time["Plant"].dropna().unique())
     selected_plants = st.sidebar.multiselect(
@@ -255,11 +230,9 @@ with tab_results:
 
     df_plant = df_time[df_time["Plant"].isin(selected_plants)]
 
-    # Variety
     st.sidebar.subheader("🌿 Variety Filter")
     variety_list = sorted(df_plant["Product Variety"].dropna().unique())
 
-    # Add Select All option
     variety_options = ["Select All"] + variety_list
     
     selected_varieties = st.sidebar.multiselect(
@@ -268,7 +241,6 @@ with tab_results:
         default=["Select All"]
     )
     
-    # Handle Select All logic
     if "Select All" in selected_varieties:
         selected_varieties = variety_list
     
@@ -276,9 +248,8 @@ with tab_results:
         df_plant["Product Variety"].isin(selected_varieties)
     ].copy()
 
-
     # ============================================================
-    # MERGE OPPORTUNITY COST
+    # MERGE BUDGET
     # ============================================================
     filtered_df = filtered_df.merge(
         budget_lookup,
@@ -290,68 +261,129 @@ with tab_results:
         st.warning("⚠️ Some Fiscal Year / Week combinations missing budget mapping")
 
     # ============================================================
-    # CALCULATIONS
+    # PRE-CALCULATE Yield/Ha (needed before allocation)
     # ============================================================
     filtered_df["Yield/Ha"] = (
         filtered_df["Yield Kg"] / filtered_df["Variety Area (ha)"]
     )
 
-    filtered_df["Combined Platform Run time"] = (
-        filtered_df["Variety Area (ha)"] / harvest_speed
-    ).clip(upper=max_available_hours)
+    # ============================================================
+    # ALLOCATION LOGIC
+    # Daily capacity (ha) = num_machines × session_length × harvest_speed
+    # Varieties sorted by highest Yield/Ha get priority each day per plant.
+    # Fill fully if remaining capacity ≥ variety area, partially if not,
+    # skip if capacity exhausted.
+    # ============================================================
 
-    filtered_df["Area_Harvested"] = (
-        filtered_df["Combined Platform Run time"] * harvest_speed
+    daily_capacity_ha = num_machines * session_length * harvest_speed
+
+    def allocate_daily_harvest(df_day):
+        df_day = df_day.copy()
+
+        # Sort by Yield/Ha descending — highest productivity gets capacity first
+        sort_order = df_day["Yield/Ha"].argsort()[::-1]
+        df_day = df_day.iloc[sort_order.values].copy()
+
+        remaining_capacity = daily_capacity_ha
+
+        allocated_area = []
+
+        for _, row in df_day.iterrows():
+            variety_area = row["Variety Area (ha)"]
+
+            if remaining_capacity <= 0:
+                area = 0
+            elif remaining_capacity >= variety_area:
+                area = variety_area
+            else:
+                area = remaining_capacity
+
+            allocated_area.append(area)
+            remaining_capacity -= area
+
+        df_day["Area_Harvested"] = allocated_area
+        return df_day
+
+    # Group by Pick Date AND Plant — each plant has its own independent capacity pool
+    filtered_df = (
+        filtered_df
+        .groupby(["Pick Date", "Plant"], group_keys=False)
+        .apply(allocate_daily_harvest)
+    )
+
+    # ============================================================
+    # YIELD HARVESTED & YIELD LOST
+    # Yield_Lost  = damaged/lost portion of what was allocated
+    # Yield_Harvested = net usable yield after losses
+    # Both based purely on Area_Harvested × Yield/Ha
+    # ============================================================
+    filtered_df["Yield_Lost"] = (
+        lost_damaged_pct
+        * filtered_df["Area_Harvested"]
+        * filtered_df["Yield/Ha"]
     )
 
     filtered_df["Yield_Harvested"] = (
         (1 - lost_damaged_pct)
-        * filtered_df["Yield/Ha"]
         * filtered_df["Area_Harvested"]
+        * filtered_df["Yield/Ha"]
     )
 
-    filtered_df["Yield_Lost"] = (
-        lost_damaged_pct
-        * filtered_df["Yield/Ha"]
-        * filtered_df["Area_Harvested"]
+    # ============================================================
+    # HARVEST STATUS
+    # ============================================================
+    filtered_df["Harvest Status"] = np.select(
+        [
+            filtered_df["Area_Harvested"] == 0,
+            filtered_df["Area_Harvested"] < filtered_df["Variety Area (ha)"],
+            filtered_df["Area_Harvested"] >= filtered_df["Variety Area (ha)"]
+        ],
+        ["Not Harvested", "Partially Harvested", "Fully Harvested"],
+        default="Unknown"
     )
 
+    # ============================================================
+    # PLATFORM RUN TIME (based on actual harvested area)
+    # ============================================================
+    filtered_df["Combined Platform Run time"] = (
+        filtered_df["Area_Harvested"] / harvest_speed
+    )
 
+    # ============================================================
+    # OPPORTUNITY COST & SAVINGS
+    # ============================================================
     filtered_df["Opportunity Cost"] = (
-        filtered_df["Budget Sales Price($)"] * filtered_df["Yield_Lost"]* seconds_efficiency
+        filtered_df["Budget Sales Price($)"] * filtered_df["Yield_Lost"] * seconds_efficiency
         - (
             overhead_pct * filtered_df["Cost Per Kg - Total Harvest Cost"] * filtered_df["Yield_Lost"]
-            + packaging_cost_per_kg * filtered_df["Yield_Lost"] *seconds_efficiency
+            + packaging_cost_per_kg * filtered_df["Yield_Lost"] * seconds_efficiency
         )
     ).clip(lower=0)
 
-    
-    # 1️⃣ Platform productivity
+    # Platform productivity
     filtered_df["Platform Kg/hour"] = (
         filtered_df["Yield_Harvested"]
-        / filtered_df["Combined Platform Run time"]
+        / filtered_df["Combined Platform Run time"].replace(0, pd.NA)
     )
-    
-    # Replace invalid productivity
+
     filtered_df["Platform Kg/hour"] = (
         filtered_df["Platform Kg/hour"]
-        .replace([0, float("inf"), -float("inf")], pd.NA)
+        .replace([float("inf"), -float("inf")], pd.NA)
     )
-    
-    # 2️⃣ Labour cost per machine
+
+    # Labour cost per machine
     labour_cost_per_machine = staff_wages / machine_to_staff
-    
-    # 3️⃣ Platform cost per kg (SAFE)
+
+    # Platform cost per kg
     filtered_df["Platform cost/kg"] = (
         labour_cost_per_machine
         / filtered_df["Platform Kg/hour"]
     )
-    
+
     filtered_df["Platform cost/kg"] = (
         filtered_df["Platform cost/kg"]
         .replace([pd.NA, float("inf"), -float("inf")], 0)
     )
-
 
     filtered_df["Daily harvest savings"] = (
         filtered_df["Yield_Harvested"]
@@ -359,8 +391,7 @@ with tab_results:
             filtered_df["Cost Per Kg - Total Harvest Cost"]
             - filtered_df["Platform cost/kg"]
         )
-    ).clip(lower =0)
-    
+    ).clip(lower=0)
 
     filtered_df["Savings - Yield loss cost"] = (
         filtered_df["Daily harvest savings"]
@@ -369,8 +400,32 @@ with tab_results:
 
     filtered_df["Pick Date"] = pd.to_datetime(filtered_df["Pick Date"]).dt.date
 
+    # ============================================================
+    # ROW HIGHLIGHTING
+    # ============================================================
+    def highlight_rows(row):
+        if row["Harvest Status"] == "Fully Harvested":
+            return ["background-color: #d4edda"] * len(row)
+        elif row["Harvest Status"] == "Partially Harvested":
+            return ["background-color: #fff3cd"] * len(row)
+        elif row["Harvest Status"] == "Not Harvested":
+            return ["background-color: #f8d7da"] * len(row)
+        else:
+            return [""] * len(row)
+
     st.subheader("📊 Harvest Results")
-    st.dataframe(filtered_df, use_container_width=True)
+    styled_results = filtered_df.style.apply(highlight_rows, axis=1)
+    st.dataframe(styled_results, use_container_width=True)
+
+    st.markdown(
+        """
+        **Harvest Allocation Legend**
+        
+        🟢 Green → Fully Harvested  
+        🟡 Yellow → Partially Harvested  
+        🔴 Red → Not Harvested (platform capacity exhausted)
+        """
+    )
 
     # ============================================================
     # SUMMARY + TOTAL ROW
@@ -402,7 +457,6 @@ with tab_results:
         "Savings_Yield_loss_cost": [grouped_summary["Savings_Yield_loss_cost"].sum()]
     })
 
-
     grouped_summary = pd.concat(
         [grouped_summary, total_row],
         ignore_index=True
@@ -411,44 +465,27 @@ with tab_results:
     plant_savings = (
         filtered_df
         .groupby("Plant", as_index=False)
-        .agg(
-            Net_Savings=("Savings - Yield loss cost", "sum")
-        )
+        .agg(Net_Savings=("Savings - Yield loss cost", "sum"))
         .sort_values("Net_Savings", ascending=False)
     )
 
     daily_savings = (
         filtered_df
         .groupby(["Pick Date", "Plant"], as_index=False)
-        .agg(
-            Net_Savings=("Savings - Yield loss cost", "sum")
-        )
+        .agg(Net_Savings=("Savings - Yield loss cost", "sum"))
     )
 
     plant_variety_savings = (
         filtered_df
         .groupby(["Plant", "Product Variety"], as_index=False)
-        .agg(
-            Net_Savings=("Savings - Yield loss cost", "sum")
-        )
+        .agg(Net_Savings=("Savings - Yield loss cost", "sum"))
     )
 
     stacked_df = (
         plant_variety_savings
-        .pivot(
-            index="Plant",
-            columns="Product Variety",
-            values="Net_Savings"
-        )
+        .pivot(index="Plant", columns="Product Variety", values="Net_Savings")
         .fillna(0)
     )
-
-
-    currency_cols = [
-        "Daily_harvest_savings",
-        "Savings_Yield_loss_cost"
-    ]
-    
 
     display_df = grouped_summary.rename(columns={
         "Area_Harvested": "Area Harvested (Ha)",
@@ -457,7 +494,6 @@ with tab_results:
         "Daily_harvest_savings": "Daily Harvest Savings ($)",
         "Savings_Yield_loss_cost": "Net Savings ($)"
     })
-
 
     styled_df = display_df.style.format({
         "Area Harvested (Ha)": "{:,.2f}",
@@ -471,9 +507,7 @@ with tab_results:
     st.dataframe(styled_df, use_container_width=True)
 
     total_days = filtered_df.shape[0]
-    positive_days = (
-        filtered_df["Savings - Yield loss cost"] > 0
-    ).sum()
+    positive_days = (filtered_df["Savings - Yield loss cost"] > 0).sum()
 
     pct_positive_days = (
         positive_days / total_days * 100
@@ -504,9 +538,8 @@ with tab_results:
     )
 
     # ============================================================
-    # MACHINE INVESTMENT (Move ABOVE Investment Summary)
+    # MACHINE INVESTMENT
     # ============================================================
-    
     st.markdown("---")
     st.subheader("💰 Machine Investment")
     
@@ -539,64 +572,17 @@ with tab_results:
         f"**Total Investment:**  \n"
         f"💲 `{total_spend:,.0f}`"
     )
-    
-       # ============================================================
-    # INVESTMENT SUMMARY
-    # ============================================================
-    
-    # Positive savings only
-    positive_savings = filtered_df.loc[
-        filtered_df["Savings - Yield loss cost"] > 0,
-        "Savings - Yield loss cost"
-    ]
-    
-    total_savings_year = positive_savings.sum()
-    
-    annual_net_savings = total_savings_year - total_spend
-    
-    # Avoid division by zero
-    if total_savings_year > 0:
-        payback_period_years = total_spend / total_savings_year
-    else:
-        payback_period_years = 0
-    
-    # st.markdown("## 💰 Investment Summary")
-    
-    # col1, col2, col3, col4 = st.columns(4)
-    
-    # col1.metric(
-    #     "Total Machine Investment",
-    #     f"${total_spend:,.0f}"
-    # )
-    
-    # col2.metric(
-    #     "Total Annual Savings (Positive Days Only)",
-    #     f"${total_savings_year:,.0f}"
-    # )
-    
-    # col3.metric(
-    #     "Net Position After Year 1",
-    #     f"${annual_net_savings:,.0f}"
-    # )
-    
-    # col4.metric(
-    #     "Payback Period (Years)",
-    #     f"{payback_period_years:.2f} yrs"
-    # )
 
     # ============================================================
-    # ANNUAL SAVINGS & PAYBACK + MULTI-YEAR PROJECTION
+    # INVESTMENT SUMMARY
     # ============================================================
-    
     st.markdown("## 💰 Investment Summary")
     
-    # Total savings for selected year
     total_savings_year = grouped_summary.loc[
         grouped_summary["Plant"] == "TOTAL",
         "Savings_Yield_loss_cost"
     ].values[0]
     
-    # ---- SLIDER (1–10 years, default 10) ----
     projection_years = st.slider(
         "Projection Period (Years)",
         min_value=1,
@@ -604,15 +590,12 @@ with tab_results:
         value=1
     )
     
-    # ---- Total Spend ----
     total_spend = machine_cost * num_machines
     
-    # ---- Net Position based on slider ----
     net_position_selected_year = (
         total_savings_year * projection_years
     ) - total_spend
     
-    # ---- Payback ----
     if total_savings_year > 0:
         payback_period_years = total_spend / total_savings_year
     else:
@@ -636,10 +619,9 @@ with tab_results:
     )
     
     # ============================================================
-    # MULTI-YEAR PROJECTION CHART (DEFAULT 10 YEARS)
+    # MULTI-YEAR PROJECTION CHART
     # ============================================================
-    
-    years = list(range(0, 11))  # Always show 10-year projection
+    years = list(range(0, 11))
     
     cumulative_position = []
     
@@ -665,14 +647,10 @@ with tab_results:
         y=alt.Y("Cumulative Net Position ($):Q")
     )
     
-    # Main projection line
     projection_line = base.mark_line(point=True)
     
-    # Bold zero line
     zero_line = alt.Chart(
-        pd.DataFrame({
-            "y": [0]
-        })
+        pd.DataFrame({"y": [0]})
     ).mark_rule(
         strokeWidth=3,
         color="black"
@@ -680,20 +658,16 @@ with tab_results:
         y="y:Q"
     )
     
-    chart = (
-        projection_line + zero_line
-    ).properties(
-        height=400
-    )
+    chart = (projection_line + zero_line).properties(height=400)
     
     st.altair_chart(chart, use_container_width=True)
     
-    # Break-even message
     if total_savings_year > 0:
         break_even_year = total_spend / total_savings_year
         st.success(f"📍 Break-even occurs at approximately Year {break_even_year:.2f}")
     else:
         st.warning("⚠️ No positive savings — break-even not achievable.")
+
 with tab_dictionary:
 
     st.subheader("📘 Harvest Model – Data Dictionary")
@@ -712,28 +686,32 @@ with tab_dictionary:
             "Key Assumptions": "Yield is evenly distributed across the planted area"
         },
         {
-            "Field Name": "Combined Platform Run time",
-            "Description": "Total platform runtime required to harvest the variety area",
-            "Formula / Logic": "Variety Area (ha) ÷ Harvest Speed (ha/hr), capped at max available hours",
-            "Key Assumptions": "Machines operate continuously up to the available session hours"
+            "Field Name": "Area_Harvested",
+            "Description": "Area harvested based on daily capacity allocation (fill-down by Yield/Ha priority)",
+            "Formula / Logic": (
+                "Daily capacity (num_machines × session_length × harvest_speed) shared across varieties per plant per day. "
+                "Highest Yield/Ha variety fills first. Fully harvested if capacity ≥ Variety Area, "
+                "partially harvested if capacity < Variety Area, not harvested if capacity exhausted."
+            ),
+            "Key Assumptions": "Each plant has its own independent capacity pool per day"
         },
         {
-            "Field Name": "Area_Harvested",
-            "Description": "Total area harvested by the platform during the session",
-            "Formula / Logic": "Combined Platform Run time × Harvest Speed",
-            "Key Assumptions": "No downtime or inefficiency beyond the runtime cap"
+            "Field Name": "Yield_Lost",
+            "Description": "Yield lost due to damage or handling during harvest",
+            "Formula / Logic": "Lost/Damaged % × Area_Harvested × Yield/Ha",
+            "Key Assumptions": "Loss only applies to area actually harvested — not to unharvested area"
         },
         {
             "Field Name": "Yield_Harvested",
             "Description": "Net harvested yield after accounting for damage and losses",
-            "Formula / Logic": "(1 − Lost/Damaged %) × Yield/Ha × Area_Harvested",
+            "Formula / Logic": "(1 − Lost/Damaged %) × Area_Harvested × Yield/Ha",
             "Key Assumptions": "Loss percentage applies uniformly across harvested area"
         },
         {
-            "Field Name": "Yield_Lost",
-            "Description": "Yield lost due to damage, inefficiency, or handling",
-            "Formula / Logic": "Lost/Damaged % × Yield/Ha × Area_Harvested",
-            "Key Assumptions": "Lost yield cannot be recovered for sale"
+            "Field Name": "Combined Platform Run time",
+            "Description": "Total platform runtime used to harvest the allocated area",
+            "Formula / Logic": "Area_Harvested ÷ Harvest Speed (ha/hr)",
+            "Key Assumptions": "Runtime reflects actual harvested area only"
         },
         {
             "Field Name": "Seconds Efficiency",
@@ -749,7 +727,7 @@ with tab_dictionary:
         },
         {
             "Field Name": "Opportunity Cost",
-            "Description": "Net revenue lost due to damaged or unharvested fruit",
+            "Description": "Net revenue lost due to damaged fruit",
             "Formula / Logic": (
                 "(Budget Sales Price × Yield_Lost × Seconds Efficiency) − "
                 "(Overhead % × Cost Per Kg × Yield_Lost + Packaging Cost × Yield_Lost × Seconds Efficiency)"
@@ -772,13 +750,13 @@ with tab_dictionary:
             "Field Name": "Daily harvest savings",
             "Description": "Cost savings achieved by platform harvesting versus baseline",
             "Formula / Logic": "Yield_Harvested × (Baseline Cost/kg − Platform cost/kg)",
-            "Key Assumptions": "Baseline cost reflects traditional harvesting"
+            "Key Assumptions": "Baseline cost reflects traditional harvesting; clipped at 0"
         },
         {
             "Field Name": "Savings - Yield loss cost",
             "Description": "Net economic benefit after accounting for lost yield",
             "Formula / Logic": "Daily harvest savings − Opportunity Cost",
-            "Key Assumptions": "Negative savings are clipped to zero"
+            "Key Assumptions": "Negative values retained (not clipped)"
         },
         {
             "Field Name": "Pick Date",
@@ -787,7 +765,6 @@ with tab_dictionary:
             "Key Assumptions": "Time of day is not analytically relevant"
         }
     ])
-
 
     st.dataframe(
         data_dictionary,
@@ -799,4 +776,3 @@ with tab_dictionary:
         "ℹ️ All percentages, costs, and efficiencies are user-adjustable "
         "to support scenario testing and sensitivity analysis."
     )
-

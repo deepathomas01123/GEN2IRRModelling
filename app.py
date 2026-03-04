@@ -277,17 +277,24 @@ with tab_results:
         st.warning("⚠️ Some Fiscal Year / Week combinations missing budget mapping")
 
     # ============================================================
-    # PRE-CALCULATE Yield/Ha (needed before allocation)
+    # PRE-CALCULATE Yield/Ha and Cost/Ha (needed before allocation)
+    # Cost/Ha = Cost Per Kg × Yield/Ha
+    # Varieties with highest Cost/Ha get harvested first —
+    # prioritising the most economically exposed rows
     # ============================================================
     filtered_df["Yield/Ha"] = (
         filtered_df["Yield Kg"] / filtered_df["Variety Area (ha)"]
     )
 
+    filtered_df["Cost/Ha"] = (
+        filtered_df["Cost Per Kg - Total Harvest Cost"] * filtered_df["Yield/Ha"]
+    )
+
     # ============================================================
     # ALLOCATION LOGIC
     # Daily capacity (ha) = num_machines × session_length × harvest_speed
-    # Varieties sorted by highest Yield/Ha get priority each day per plant.
-    # Fill fully if remaining capacity ≥ variety area, partially if not,
+    # Varieties sorted by highest Cost/Ha get priority each day per plant.
+    # Fill fully if remaining capacity >= variety area, partially if not,
     # skip if capacity exhausted.
     # ============================================================
 
@@ -296,8 +303,8 @@ with tab_results:
     def allocate_daily_harvest(df_day):
         df_day = df_day.copy()
 
-        # Sort by Yield/Ha descending — highest productivity gets capacity first
-        sort_order = df_day["Yield/Ha"].argsort()[::-1]
+        # Sort by Cost/Ha descending — highest cost exposure gets capacity first
+        sort_order = df_day["Cost/Ha"].argsort()[::-1]
         df_day = df_day.iloc[sort_order.values].copy()
 
         remaining_capacity = daily_capacity_ha
@@ -331,7 +338,7 @@ with tab_results:
     # YIELD HARVESTED & YIELD LOST
     # Yield_Lost  = damaged/lost portion of what was allocated
     # Yield_Harvested = net usable yield after losses
-    # Both based purely on Area_Harvested × Yield/Ha
+    # Both based purely on Area_Harvested x Yield/Ha
     # ============================================================
     filtered_df["Yield_Lost"] = (
         lost_damaged_pct
@@ -525,7 +532,7 @@ with tab_results:
     st.metric(
         label="📈 % Days with Positive Net Savings",
         value=f"{pct_positive_days:.1f}%",
-        help="Percentage of harvest days where Savings – Yield loss cost was greater than zero"
+        help="Percentage of harvest days where Savings - Yield loss cost was greater than zero"
     )
 
     st.subheader("📈 Daily Net Savings Trend by Plant")
@@ -694,11 +701,17 @@ with tab_dictionary:
             "Key Assumptions": "Yield is evenly distributed across the planted area"
         },
         {
+            "Field Name": "Cost/Ha",
+            "Description": "Total harvest cost per hectare — used to prioritise allocation",
+            "Formula / Logic": "Cost Per Kg × Yield/Ha",
+            "Key Assumptions": "Varieties with higher Cost/Ha are harvested first to minimise economic exposure"
+        },
+        {
             "Field Name": "Area_Harvested",
-            "Description": "Area harvested based on daily capacity allocation (fill-down by Yield/Ha priority)",
+            "Description": "Area harvested based on daily capacity allocation (fill-down by Cost/Ha priority)",
             "Formula / Logic": (
                 "Daily capacity (num_machines × session_length × harvest_speed) shared across varieties per plant per day. "
-                "Highest Yield/Ha variety fills first. Fully harvested if capacity ≥ Variety Area, "
+                "Highest Cost/Ha variety fills first. Fully harvested if capacity >= Variety Area, "
                 "partially harvested if capacity < Variety Area, not harvested if capacity exhausted."
             ),
             "Key Assumptions": "Each plant has its own independent capacity pool per day"
@@ -712,7 +725,7 @@ with tab_dictionary:
         {
             "Field Name": "Yield_Harvested",
             "Description": "Net harvested yield after accounting for damage and losses",
-            "Formula / Logic": "(1 − Lost/Damaged %) × Area_Harvested × Yield/Ha",
+            "Formula / Logic": "(1 - Lost/Damaged %) × Area_Harvested × Yield/Ha",
             "Key Assumptions": "Loss percentage applies uniformly across harvested area"
         },
         {
@@ -737,7 +750,7 @@ with tab_dictionary:
             "Field Name": "Opportunity Cost",
             "Description": "Net revenue lost due to damaged fruit",
             "Formula / Logic": (
-                "(Budget Sales Price × Yield_Lost × Seconds Efficiency) − "
+                "(Budget Sales Price × Yield_Lost × Seconds Efficiency) - "
                 "(Overhead % × Cost Per Kg × Yield_Lost + Packaging Cost × Yield_Lost × Seconds Efficiency)"
             ),
             "Key Assumptions": "Lost yield incurs avoided costs (packaging & overhead)"
@@ -757,13 +770,13 @@ with tab_dictionary:
         {
             "Field Name": "Daily harvest savings",
             "Description": "Cost savings achieved by platform harvesting versus baseline",
-            "Formula / Logic": "Yield_Harvested × (Baseline Cost/kg − Platform cost/kg)",
+            "Formula / Logic": "Yield_Harvested × (Baseline Cost/kg - Platform cost/kg)",
             "Key Assumptions": "Baseline cost reflects traditional harvesting; clipped at 0"
         },
         {
             "Field Name": "Savings - Yield loss cost",
             "Description": "Net economic benefit after accounting for lost yield",
-            "Formula / Logic": "Daily harvest savings − Opportunity Cost",
+            "Formula / Logic": "Daily harvest savings - Opportunity Cost",
             "Key Assumptions": "Negative values retained (not clipped)"
         },
         {

@@ -220,6 +220,10 @@ with tab_results:
 
     df_time = df_time[df_time["Fiscal Week No"].isin(selected_fw)]
 
+    if not selected_fw or df_time.empty:
+        st.info("👆 Please select at least one **Fiscal Week** to continue.")
+        st.stop()
+
     st.sidebar.subheader("🌱 Plant Filter")
     plant_list = sorted(df_time["Plant"].dropna().unique())
     selected_plants = st.sidebar.multiselect(
@@ -229,6 +233,10 @@ with tab_results:
     )
 
     df_plant = df_time[df_time["Plant"].isin(selected_plants)]
+
+    if not selected_plants or df_plant.empty:
+        st.info("👆 Please select at least one **Plant** to continue.")
+        st.stop()
 
     st.sidebar.subheader("🌿 Variety Filter")
     variety_list = sorted(df_plant["Product Variety"].dropna().unique())
@@ -243,10 +251,18 @@ with tab_results:
     
     if "Select All" in selected_varieties:
         selected_varieties = variety_list
+
+    if not selected_varieties:
+        st.info("👆 Please select at least one **Variety** to continue.")
+        st.stop()
     
     filtered_df = df_plant[
         df_plant["Product Variety"].isin(selected_varieties)
     ].copy()
+
+    if filtered_df.empty:
+        st.info("👆 No data matches the current filter selection. Please adjust your filters.")
+        st.stop()
 
     # ============================================================
     # MERGE BUDGET

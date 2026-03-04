@@ -434,7 +434,11 @@ with tab_results:
             return [""] * len(row)
 
     st.subheader("📊 Harvest Results")
-    styled_results = filtered_df.style.apply(highlight_rows, axis=1)
+    cols_to_hide = ["Fiscal Year", "Fiscal Week No", "Costa Fiscal Year"]
+    display_results = filtered_df.drop(
+        columns=[c for c in cols_to_hide if c in filtered_df.columns]
+    )
+    styled_results = display_results.style.apply(highlight_rows, axis=1)
     st.dataframe(styled_results, use_container_width=True)
 
     st.markdown(
@@ -645,7 +649,7 @@ with tab_results:
     )
     
     col2.metric(
-        "Annual Savings",
+        "Total Annual Savings",
         f"${total_savings_year:,.0f}"
     )
     

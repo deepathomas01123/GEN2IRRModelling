@@ -540,14 +540,30 @@ with tab_results:
     )
 
     st.subheader("📈 Daily Net Savings Trend by Plant")
-    
-    st.line_chart(
-        daily_savings,
-        x="Pick Date",
-        y="Net_Savings",
-        color="Plant",
-        width="stretch"
+
+    daily_savings["Pick Date"] = pd.to_datetime(daily_savings["Pick Date"])
+
+    line_chart = (
+        alt.Chart(daily_savings)
+        .mark_line(point=True)
+        .encode(
+            x=alt.X("Pick Date:T", title="Pick Date"),
+            y=alt.Y(
+                "Net_Savings:Q",
+                title="Net Savings ($)",
+                axis=alt.Axis(format="$,.2f")
+            ),
+            color=alt.Color("Plant:N", title="Plant"),
+            tooltip=[
+                alt.Tooltip("Pick Date:T", title="Date"),
+                alt.Tooltip("Plant:N", title="Plant"),
+                alt.Tooltip("Net_Savings:Q", title="Net Savings ($)", format="$,.2f")
+            ]
+        )
+        .properties(height=400)
     )
+
+    st.altair_chart(line_chart, use_container_width=True)
 
     st.subheader("📊 Net Savings by Plant & Variety (Selected Year)")
     
@@ -628,7 +644,7 @@ with tab_results:
     )
     
     col2.metric(
-        "Annual Savings",
+        "Total Annual Savings",
         f"${total_savings_year:,.0f}"
     )
     

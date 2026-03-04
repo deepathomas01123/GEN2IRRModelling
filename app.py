@@ -155,8 +155,12 @@ with tab_results:
     session_length = st.sidebar.number_input(
         "Session Length (Hours)",
         value=8.0,
+        min_value=0.5,
+        max_value=24.0,
         step=0.5
     )
+    if session_length >= 24.0:
+        st.sidebar.warning("⚠️ Session length is at the maximum of 24 hours.")
 
     lost_damaged_pct = st.sidebar.number_input(
         "Lost / Damaged %",
@@ -616,7 +620,7 @@ with tab_results:
     else:
         payback_period_years = 0
     
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     
     col1.metric(
         "Total Machine Investment",
@@ -624,11 +628,16 @@ with tab_results:
     )
     
     col2.metric(
+        "Total Annual Savings",
+        f"${total_savings_year:,.0f}"
+    )
+    
+    col3.metric(
         f"Net Position After {projection_years} Years",
         f"${net_position_selected_year:,.0f}"
     )
     
-    col3.metric(
+    col4.metric(
         "Payback Period",
         f"{payback_period_years:.2f} yrs"
     )

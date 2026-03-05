@@ -457,12 +457,12 @@ with tab_results:
         "Savings - Yield loss cost"
     ].sum()
 
-    st.markdown(
-        f"**Total Net Savings (positive rows only):** &nbsp; "
-        f"<span style='font-size:18px; color:#198754; font-weight:bold;'>"
-        f"${positive_net_savings_total:,.2f}</span>",
-        unsafe_allow_html=True
-    )
+    # st.markdown(
+    #     f"**Total Savings (positive rows only):** &nbsp; "
+    #     f"<span style='font-size:18px; color:#198754; font-weight:bold;'>"
+    #     f"${positive_net_savings_total:,.2f}</span>",
+    #     unsafe_allow_html=True
+    # )
 
     # ============================================================
     # SUMMARY + TOTAL ROW

@@ -93,7 +93,7 @@ with tab_results:
     )
 
     df["Fiscal Week No"] = df["Fiscal Week No"].astype(int)
-    df["Pick Date"] = pd.to_datetime(df["Pick Date"])
+    df["Pick Date"] = pd.to_datetime(df["Pick Date"], dayfirst=False)
 
     # ============================================================
     # SIDEBAR INPUTS
@@ -451,6 +451,26 @@ with tab_results:
         """
     )
 
+    # ---- Positive rows summary below harvest results ----
+    positive_rows = filtered_df[filtered_df["Savings - Yield loss cost"] > 0]
+
+    col_pos1, col_pos2, col_pos3 = st.columns(3)
+
+    col_pos1.metric(
+        "✅ Total Rows with Positive Net Savings",
+        f"{len(positive_rows):,}"
+    )
+
+    col_pos2.metric(
+        "✅ Total Positive Net Savings ($)",
+        f"${positive_rows['Savings - Yield loss cost'].sum():,.2f}"
+    )
+
+    col_pos3.metric(
+        "✅ Total Positive Daily Harvest Savings ($)",
+        f"${positive_rows['Daily harvest savings'].sum():,.2f}"
+    )
+
     # ============================================================
     # SUMMARY + TOTAL ROW
     # ============================================================
@@ -649,7 +669,7 @@ with tab_results:
     )
     
     col2.metric(
-        "Annual Savings",
+        "Total Annual Savings",
         f"${total_savings_year:,.0f}"
     )
     

@@ -451,26 +451,6 @@ with tab_results:
         """
     )
 
-    # ---- Positive rows summary below harvest results ----
-    positive_rows = filtered_df[filtered_df["Savings - Yield loss cost"] > 0]
-
-    col_pos1, col_pos2, col_pos3 = st.columns(3)
-
-    col_pos1.metric(
-        "✅ Total Rows with Positive Net Savings",
-        f"{len(positive_rows):,}"
-    )
-
-    col_pos2.metric(
-        "✅ Total Positive Net Savings ($)",
-        f"${positive_rows['Savings - Yield loss cost'].sum():,.2f}"
-    )
-
-    col_pos3.metric(
-        "✅ Total Positive Daily Harvest Savings ($)",
-        f"${positive_rows['Daily harvest savings'].sum():,.2f}"
-    )
-
     # ============================================================
     # SUMMARY + TOTAL ROW
     # ============================================================

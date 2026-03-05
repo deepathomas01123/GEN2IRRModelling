@@ -649,7 +649,7 @@ with tab_results:
     )
     
     col2.metric(
-        "Total Annual Savings",
+        "Annual Savings",
         f"${total_savings_year:,.0f}"
     )
     

@@ -451,6 +451,19 @@ with tab_results:
         """
     )
 
+    # ---- Total of positive Savings - Yield loss cost rows ----
+    positive_net_savings_total = filtered_df.loc[
+        filtered_df["Savings - Yield loss cost"] > 0,
+        "Savings - Yield loss cost"
+    ].sum()
+
+    st.markdown(
+        f"**Total Net Savings (positive rows only):** &nbsp; "
+        f"<span style='font-size:18px; color:#198754; font-weight:bold;'>"
+        f"${positive_net_savings_total:,.2f}</span>",
+        unsafe_allow_html=True
+    )
+
     # ============================================================
     # SUMMARY + TOTAL ROW
     # ============================================================

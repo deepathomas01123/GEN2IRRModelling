@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import altair as alt
 
+st.cache_data.clear()
 st.set_page_config(
     layout="wide"
 )
@@ -344,20 +345,20 @@ with tab_results:
     filtered_df["Area_Harvested"] = 0.0
     
     # Apply allocation per group manually
-    for (pick_date, plant), group_idx in filtered_df.groupby(["Pick Date", "Plant"]).groups.items():
-        
+    for (pick_date, plant), group in filtered_df.groupby(["Pick Date", "Plant"]):
+
         remaining_capacity = daily_capacity_ha
-        
-        for idx in group_idx:
+    
+        for idx in group.index:
             variety_area = filtered_df.loc[idx, "Variety Area (ha)"]
-            
+    
             if remaining_capacity <= 0:
                 area = 0
             elif remaining_capacity >= variety_area:
                 area = variety_area
             else:
                 area = remaining_capacity
-            
+    
             filtered_df.loc[idx, "Area_Harvested"] = area
             remaining_capacity -= area
     # ============================================================

@@ -331,7 +331,8 @@ with tab_results:
 
         df_day["Area_Harvested"] = allocated_area
         return df_day
-
+        
+    st.write("Columns after allocation:", filtered_df.columns.tolist())
     # Group by Pick Date AND Plant — each plant has its own independent capacity pool
     filtered_df = (
         filtered_df

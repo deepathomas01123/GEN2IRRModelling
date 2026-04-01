@@ -706,11 +706,9 @@ with tab_results:
         .reset_index()
     )
 
-    st.write("df columns:", df.columns.tolist())
-    st.write("df_plant row count:", len(df_plant))
-    st.write("df row count (raw):", len(df))
-    st.write("Plants in df:", df["Plant"].unique().tolist())
-    st.write("Fiscal Years in df:", df["Fiscal Year"].unique().tolist() if "Fiscal Year" in df.columns else "Fiscal Year not found")
+    st.write("df_plant_raw rows:", len(df_plant_raw))
+    st.write("step2 breakdown:", step2)
+    st.write("current_footprint:", current_footprint)
     
     current_footprint = step2["Variety Area (ha)"].sum()
     footprint_expansion = col_f1.number_input(

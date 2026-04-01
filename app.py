@@ -337,6 +337,7 @@ with tab_results:
         filtered_df
         .groupby(["Pick Date", "Plant"], group_keys=False)
         .apply(allocate_daily_harvest)
+        .reset_index(drop=True)
     )
 
     # ============================================================

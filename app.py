@@ -688,7 +688,12 @@ with tab_results:
     
     col_f1, col_f2 = st.columns(2)
     
-    current_footprint = filtered_df["Variety Area (ha)"].sum()
+    current_footprint = (
+        filtered_df
+        .groupby(["Plant", "Product Variety"])["Variety Area (ha)"]
+        .max()
+        .sum()
+    )
     
     footprint_expansion = col_f1.number_input(
         "Footprint (Total Ha)",

@@ -716,7 +716,7 @@ with tab_results:
     # ============================================================
     # CURRENT FOOTPRINT = total ha across all varieties
     # ============================================================
-    current_footprint = step2["Variety_Area_Ha"].sum()
+    current_footprint = step2["Variety_Area_Ha"]
     
     footprint_expansion = col_f1.number_input(
         "Footprint (Total Ha)",

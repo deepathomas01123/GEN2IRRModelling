@@ -689,7 +689,7 @@ with tab_results:
     col_f1, col_f2 = st.columns(2)
     
     area_base = (
-        filtered_df
+        df
         .groupby(["Plant", "Product Variety", "Pick Date"], as_index=False)
         ["Variety Area (ha)"]
         .max()

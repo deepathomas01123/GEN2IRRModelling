@@ -692,23 +692,13 @@ with tab_results:
         (df["Plant"].isin(selected_plants))
     ]
     
-    step1 = (
+    current_footprint = (
         df_plant_raw
-        .groupby(["Plant", "Product Variety", "Pick Date"])["Variety Area (ha)"]
-        .mean()
-        .reset_index()
-    )
-    
-    step2 = (
-        step1
         .groupby(["Plant", "Product Variety"])["Variety Area (ha)"]
-        .mean()
-        .reset_index()
+        .max()   # ← take the largest ha value seen for each variety
+        .sum()   # ← sum across all varieties
     )
 
-    st.write("df_plant_raw rows:", len(df_plant_raw))
-    st.write("step2 breakdown:", step2)
-    current_footprint = step2["Variety Area (ha)"].sum()
     st.write("current_footprint:", current_footprint)
     
     

@@ -688,35 +688,26 @@ with tab_results:
     
     col_f1, col_f2 = st.columns(2)
     
-        # ============================================================
-    # STEP 1 — Mirror Image 1
-    # AVERAGE Variety Area per Location + Pick Event Date
-    # (collapses duplicate rows within the same pick event)
-    # ============================================================
+    # STEP 1 — Deduplicate: AVERAGE within Location + Pick Date
     step1 = (
         filtered_df
         .groupby(["Plant", "Product Variety", "Pick Date"])["Variety Area (ha)"]
-        .mean()  # ← AVERAGE, same as SAC Image 1
+        .mean()
         .reset_index()
         .rename(columns={"Variety Area (ha)": "Variety_Area_Avg"})
     )
     
-    # ============================================================
-    # STEP 2 — Mirror Image 2
-    # SUM the averaged values per Location + Product Variety
-    # ============================================================
+    # STEP 2 — Get clean ha per Plant + Variety (mirrors SAC Image 2)
     step2 = (
         step1
         .groupby(["Plant", "Product Variety"])["Variety_Area_Avg"]
-        .sum()  # ← SUM, same as SAC Image 2
+        .mean()  # ← mean again to get the single true ha value per variety
         .reset_index()
         .rename(columns={"Variety_Area_Avg": "Variety_Area_Ha"})
     )
     
-    # ============================================================
-    # CURRENT FOOTPRINT = total ha across all varieties
-    # ============================================================
-    current_footprint = step2["Variety_Area_Ha"]
+    # STEP 3 — Sum across selected plants (already filtered by selected_plants)
+    current_footprint = step2["Variety_Area_Ha"].sum()
     
     footprint_expansion = col_f1.number_input(
         "Footprint (Total Ha)",

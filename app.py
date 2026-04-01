@@ -473,6 +473,12 @@ with tab_results:
         """
     )
 
+    try:
+        print("COLUMNS:", list(filtered_df.columns))
+        print("SHAPE:", filtered_df.shape)
+    except Exception as e:
+        print("DEBUG ERROR:", e)
+
     # ---- Total of positive Savings - Yield loss cost rows ----
     positive_net_savings_total = filtered_df.loc[
         filtered_df["Savings - Yield loss cost"] > 0,

@@ -665,10 +665,6 @@ with tab_results:
         f"💲 `{total_spend:,.0f}`"
     )
 
-    # ============================================================
-    # INVESTMENT SUMMARY
-    # ============================================================
-    # ============================================================
     # INVESTMENT SUMMARY (ENHANCED WITH FOOTPRINT + CPI)
     # ============================================================
     st.markdown("## 💰 Investment Summary")
@@ -688,25 +684,29 @@ with tab_results:
     
     col_f1, col_f2 = st.columns(2)
     
-    # STEP 1 — Deduplicate: AVERAGE within Location + Pick Date
-    # Use df_plant (filtered by Plant only, NOT by fiscal week or variety)
+   # ============================================================
+    # CURRENT FOOTPRINT — use raw df, plant filter only
+    # ============================================================
+    df_plant_raw = df[
+        (df["Fiscal Year"] == 2025) &
+        (df["Plant"].isin(selected_plants))
+    ]
+    
     step1 = (
-        df_plant  # ← NOT filtered_df
+        df_plant_raw
         .groupby(["Plant", "Product Variety", "Pick Date"])["Variety Area (ha)"]
         .mean()
         .reset_index()
-        .rename(columns={"Variety Area (ha)": "Variety_Area_Avg"})
     )
     
     step2 = (
         step1
-        .groupby(["Plant", "Product Variety"])["Variety_Area_Avg"]
+        .groupby(["Plant", "Product Variety"])["Variety Area (ha)"]
         .mean()
         .reset_index()
-        .rename(columns={"Variety_Area_Avg": "Variety_Area_Ha"})
     )
     
-    current_footprint = step2["Variety_Area_Ha"].sum()
+    current_footprint = step2["Variety Area (ha)"].sum()
     footprint_expansion = col_f1.number_input(
         "Footprint (Total Ha)",
         value=float(current_footprint),

@@ -93,7 +93,7 @@ with tab_results:
     )
 
     df["Fiscal Week No"] = df["Fiscal Week No"].astype(int)
-    df["Pick Date"] = pd.to_datetime(df["Pick Date"], dayfirst=False)
+    df["Pick Date"] = pd.to_datetime(df["Pick Date"], dayfirst=False).dt.date
 
     # ============================================================
     # SIDEBAR INPUTS
@@ -419,7 +419,7 @@ with tab_results:
         - filtered_df["Opportunity Cost"]
     )
 
-    filtered_df["Pick Date"] = pd.to_datetime(filtered_df["Pick Date"]).dt.date
+
 
     # ============================================================
     # ROW HIGHLIGHTING

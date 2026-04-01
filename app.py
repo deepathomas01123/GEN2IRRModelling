@@ -688,13 +688,22 @@ with tab_results:
     
     col_f1, col_f2 = st.columns(2)
     
+    # current_footprint = (
+    #     filtered_df
+    #     .groupby(["Plant", "Product Variety", "Pick Date"])["Variety Area (ha)"]
+    #     .sum()   # ← important: sum within day
+    #     .groupby(["Plant", "Product Variety"])
+    #     .max()   # ← take max daily footprint
+    #     .sum()
+    # )
+
     current_footprint = (
-        filtered_df
+        filtered_df[filtered_df["Plant"].isin(selected_plants)]  # explicit plant filter
         .groupby(["Plant", "Product Variety", "Pick Date"])["Variety Area (ha)"]
-        .sum()   # ← important: sum within day
+        .max()    # ← max within day (not sum — avoids duplication per your earlier issue!)
         .groupby(["Plant", "Product Variety"])
-        .max()   # ← take max daily footprint
-        .sum()
+        .max()    # ← max daily footprint per variety
+        .sum()    # ← sum across all varieties = total footprint
     )
     
     footprint_expansion = col_f1.number_input(

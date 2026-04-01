@@ -688,17 +688,12 @@ with tab_results:
     
     col_f1, col_f2 = st.columns(2)
     
-    area_base = (
-        df
-        .groupby(["Plant", "Product Variety", "Pick Date"], as_index=False)
-        ["Variety Area (ha)"]
-        .max()
-    )
-
     current_footprint = (
-        area_base
-        .groupby(["Plant", "Product Variety"])["Variety Area (ha)"]
-        .max()
+        filtered_df
+        .groupby(["Plant", "Product Variety", "Pick Date"])["Variety Area (ha)"]
+        .sum()   # ← important: sum within day
+        .groupby(["Plant", "Product Variety"])
+        .max()   # ← take max daily footprint
         .sum()
     )
     

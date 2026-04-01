@@ -332,7 +332,7 @@ with tab_results:
         df_day["Area_Harvested"] = allocated_area
         return df_day
         
-    st.write("Columns after allocation:", filtered_df.columns.tolist())
+    
     # Group by Pick Date AND Plant — each plant has its own independent capacity pool
     filtered_df = (
         filtered_df
@@ -340,7 +340,7 @@ with tab_results:
         .apply(allocate_daily_harvest)
         .reset_index(drop=True)
     )
-
+    st.write("Columns after allocation:", filtered_df.columns.tolist())
     # ============================================================
     # YIELD HARVESTED & YIELD LOST
     # Yield_Lost  = damaged/lost portion of what was allocated

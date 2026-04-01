@@ -707,12 +707,12 @@ with tab_results:
     )
     
     current_footprint = step2["Variety_Area_Ha"].sum()
-        footprint_expansion = col_f1.number_input(
-            "Footprint (Total Ha)",
-            value=float(current_footprint),
-            step=1.0
-        )
-    
+    footprint_expansion = col_f1.number_input(
+        "Footprint (Total Ha)",
+        value=float(current_footprint),
+        step=1.0
+    )
+
     cpi_pct = col_f2.number_input(
         "CPI Increase (%)",
         value=3.0,

@@ -365,6 +365,9 @@ with tab_results:
     
             filtered_df.loc[idx, "Area_Harvested"] = area
             remaining_capacity -= area
+
+    # 🔥 CRITICAL FIX
+    filtered_df = filtered_df.reset_index(drop=True).copy()
     # ============================================================
     # YIELD HARVESTED & YIELD LOST
     # Yield_Lost  = damaged/lost portion of what was allocated
@@ -495,6 +498,16 @@ with tab_results:
     #     f"${positive_net_savings_total:,.2f}</span>",
     #     unsafe_allow_html=True
     # )
+
+    # 🔥 DEBUG + FIX (PASTE HERE)
+
+    print("FINAL COLUMNS BEFORE GROUPBY:", list(filtered_df.columns))
+    
+    # Force structure reset (fixes hidden pandas corruption)
+    filtered_df = pd.DataFrame(filtered_df)
+    
+    # Clean column names (important!)
+    filtered_df.columns = filtered_df.columns.astype(str).str.strip()
 
     # ============================================================
     # SUMMARY + TOTAL ROW

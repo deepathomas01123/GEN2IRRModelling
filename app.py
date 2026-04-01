@@ -689,31 +689,29 @@ with tab_results:
     col_f1, col_f2 = st.columns(2)
     
     # STEP 1 — Deduplicate: AVERAGE within Location + Pick Date
+    # Use df_plant (filtered by Plant only, NOT by fiscal week or variety)
     step1 = (
-        filtered_df
+        df_plant  # ← NOT filtered_df
         .groupby(["Plant", "Product Variety", "Pick Date"])["Variety Area (ha)"]
         .mean()
         .reset_index()
         .rename(columns={"Variety Area (ha)": "Variety_Area_Avg"})
     )
     
-    # STEP 2 — Get clean ha per Plant + Variety (mirrors SAC Image 2)
     step2 = (
         step1
         .groupby(["Plant", "Product Variety"])["Variety_Area_Avg"]
-        .mean()  # ← mean again to get the single true ha value per variety
+        .mean()
         .reset_index()
         .rename(columns={"Variety_Area_Avg": "Variety_Area_Ha"})
     )
     
-    # STEP 3 — Sum across selected plants (already filtered by selected_plants)
     current_footprint = step2["Variety_Area_Ha"].sum()
-    
-    footprint_expansion = col_f1.number_input(
-        "Footprint (Total Ha)",
-        value=float(current_footprint),
-        step=1.0
-    )
+        footprint_expansion = col_f1.number_input(
+            "Footprint (Total Ha)",
+            value=float(current_footprint),
+            step=1.0
+        )
     
     cpi_pct = col_f2.number_input(
         "CPI Increase (%)",

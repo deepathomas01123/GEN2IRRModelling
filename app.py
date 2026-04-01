@@ -334,13 +334,32 @@ with tab_results:
         
     
     # Group by Pick Date AND Plant — each plant has its own independent capacity pool
-    filtered_df = (
-        filtered_df
-        .groupby(["Pick Date", "Plant"], group_keys=False)
-        .apply(allocate_daily_harvest)
-        .reset_index(drop=True)
-    )
-    st.write("Columns after allocation:", filtered_df.columns.tolist())
+    # Sort first (this replaces groupby apply logic ordering)
+    filtered_df = filtered_df.sort_values(
+        ["Pick Date", "Plant", "Cost/Ha"],
+        ascending=[True, True, False]
+    ).copy()
+    
+    # Initialize column
+    filtered_df["Area_Harvested"] = 0.0
+    
+    # Apply allocation per group manually
+    for (pick_date, plant), group_idx in filtered_df.groupby(["Pick Date", "Plant"]).groups.items():
+        
+        remaining_capacity = daily_capacity_ha
+        
+        for idx in group_idx:
+            variety_area = filtered_df.loc[idx, "Variety Area (ha)"]
+            
+            if remaining_capacity <= 0:
+                area = 0
+            elif remaining_capacity >= variety_area:
+                area = variety_area
+            else:
+                area = remaining_capacity
+            
+            filtered_df.loc[idx, "Area_Harvested"] = area
+            remaining_capacity -= area
     # ============================================================
     # YIELD HARVESTED & YIELD LOST
     # Yield_Lost  = damaged/lost portion of what was allocated

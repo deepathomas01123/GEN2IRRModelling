@@ -708,9 +708,10 @@ with tab_results:
 
     st.write("df_plant_raw rows:", len(df_plant_raw))
     st.write("step2 breakdown:", step2)
+    current_footprint = step2["Variety Area (ha)"].sum()
     st.write("current_footprint:", current_footprint)
     
-    current_footprint = step2["Variety Area (ha)"].sum()
+    
     footprint_expansion = col_f1.number_input(
         "Footprint (Total Ha)",
         value=float(current_footprint),

@@ -665,58 +665,16 @@ with tab_results:
         f"💲 `{total_spend:,.0f}`"
     )
 
-    # INVESTMENT SUMMARY (ENHANCED WITH FOOTPRINT + CPI)
+    # ============================================================
+    # INVESTMENT SUMMARY
     # ============================================================
     st.markdown("## 💰 Investment Summary")
     
-    # -------------------------------
-    # BASE SAVINGS
-    # -------------------------------
     total_savings_year = grouped_summary.loc[
         grouped_summary["Plant"] == "TOTAL",
         "Savings_Yield_loss_cost"
     ].values[0]
     
-    # -------------------------------
-    # NEW INPUTS
-    # -------------------------------
-    st.markdown("### 📈 Growth Assumptions")
-    
-    col_f1, col_f2 = st.columns(2)
-    
-   # ============================================================
-    # CURRENT FOOTPRINT — use raw df, plant filter only
-    # ============================================================
-    df_plant_raw = df[
-        (df["Fiscal Year"] == 2025) &
-        (df["Plant"].isin(selected_plants))
-    ]
-    
-    current_footprint = (
-        df_plant_raw
-        .groupby(["Plant", "Product Variety"])["Variety Area (ha)"]
-        .max()   # ← take the largest ha value seen for each variety
-        .sum()   # ← sum across all varieties
-    )
-
-    st.write("current_footprint:", current_footprint)
-    
-    
-    footprint_expansion = col_f1.number_input(
-        "Footprint (Total Ha)",
-        value=float(current_footprint),
-        step=1.0
-    )
-
-    cpi_pct = col_f2.number_input(
-        "CPI Increase (%)",
-        value=3.0,
-        step=0.5
-    ) / 100
-    
-    # -------------------------------
-    # PROJECTION YEARS
-    # -------------------------------
     projection_years = st.slider(
         "Projection Period (Years)",
         min_value=1,
@@ -726,43 +684,15 @@ with tab_results:
     
     total_spend = machine_cost * num_machines
     
-    # -------------------------------
-    # ADJUSTED SAVINGS CALCULATION
-    # -------------------------------
-    adjusted_savings = []
+    net_position_selected_year = (
+        total_savings_year * projection_years
+    ) - total_spend
     
-    for year in range(1, projection_years + 1):
+    if total_savings_year > 0:
+        payback_period_years = total_spend / total_savings_year
+    else:
+        payback_period_years = 0
     
-        footprint_factor = (
-            footprint_expansion / current_footprint
-            if current_footprint > 0 else 1
-        )
-    
-        cpi_factor = (1 + cpi_pct) 
-    
-        yearly_saving = total_savings_year * footprint_factor * cpi_factor
-    
-        adjusted_savings.append(yearly_saving)
-    
-    total_adjusted_savings = sum(adjusted_savings)
-    
-    net_position_selected_year = total_adjusted_savings - total_spend
-    
-    # -------------------------------
-    # PAYBACK PERIOD (REALISTIC)
-    # -------------------------------
-    cumulative = 0
-    payback_period_years = None
-    
-    for i, val in enumerate(adjusted_savings):
-        cumulative += val
-        if cumulative >= total_spend:
-            payback_period_years = i + 1
-            break
-    
-    # -------------------------------
-    # KPI DISPLAY
-    # -------------------------------
     col1, col2, col3, col4 = st.columns(4)
     
     col1.metric(
@@ -771,57 +701,42 @@ with tab_results:
     )
     
     col2.metric(
-        "Base Annual Savings",
+        "Total Annual Savings",
         f"${total_savings_year:,.0f}"
     )
     
     col3.metric(
-        f"Net Position ({projection_years} yrs)",
+        f"Net Position After {projection_years} Years",
         f"${net_position_selected_year:,.0f}"
     )
     
     col4.metric(
         "Payback Period",
-        f"{payback_period_years:.2f} yrs" if payback_period_years else "N/A"
+        f"{payback_period_years:.2f} yrs"
     )
     
-    # -------------------------------
-    # YEAR-WISE TABLE (VERY USEFUL)
-    # -------------------------------
-    projection_table = []
+    # ============================================================
+    # MULTI-YEAR PROJECTION CHART
+    # ============================================================
+    years = list(range(0, 11))
     
-    cumulative = -total_spend
+    cumulative_position = []
     
-    for year in range(0, projection_years + 1):
-    
+    for year in years:
         if year == 0:
-            yearly_saving = 0
+            cumulative_position.append(-total_spend)
         else:
-            footprint_factor = (
-                footprint_expansion / current_footprint
-                if current_footprint > 0 else 1
+            cumulative_position.append(
+                -total_spend + (total_savings_year * year)
             )
     
-            cpi_factor = (1 + cpi_pct) ** (year - 1)
+    projection_df = pd.DataFrame({
+        "Year": years,
+        "Cumulative Net Position ($)": cumulative_position
+    })
     
-            yearly_saving = total_savings_year * footprint_factor * cpi_factor
-    
-        cumulative += yearly_saving
-    
-        projection_table.append({
-            "Year": year,
-            "Yearly Savings ($)": yearly_saving,
-            "Cumulative Net Position ($)": cumulative
-        })
-    
-    projection_df = pd.DataFrame(projection_table)
-    
-    st.dataframe(projection_df, use_container_width=True)
-    
-    # -------------------------------
-    # UPDATED PROJECTION CHART
-    # -------------------------------
-    st.subheader("📈 Net Position Projection (Dynamic)")
+
+    st.subheader("📈 10-Year Net Position Projection")
     
     base = alt.Chart(projection_df).encode(
         x=alt.X("Year:Q"),
@@ -843,13 +758,11 @@ with tab_results:
     
     st.altair_chart(chart, use_container_width=True)
     
-    # -------------------------------
-    # BREAK EVEN MESSAGE
-    # -------------------------------
-    if payback_period_years:
-        st.success(f"📍 Break-even occurs at Year {payback_period_years:.2f}")
+    if total_savings_year > 0:
+        break_even_year = total_spend / total_savings_year
+        st.success(f"📍 Break-even occurs at approximately Year {break_even_year:.2f}")
     else:
-        st.warning("⚠️ No break-even within selected period")
+        st.warning("⚠️ No positive savings — break-even not achievable.")
 
 with tab_dictionary:
 

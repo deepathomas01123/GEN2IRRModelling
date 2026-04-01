@@ -265,6 +265,10 @@ with tab_results:
     filtered_df = df_plant[
         df_plant["Product Variety"].isin(selected_varieties)
     ].copy()
+    
+    # DEBUG HERE
+    print("BEFORE MERGE:", df.columns.tolist())
+    print("AFTER FILTER:", filtered_df.columns.tolist())
 
     if filtered_df.empty:
         st.info("👆 No data matches the current filter selection. Please adjust your filters.")
